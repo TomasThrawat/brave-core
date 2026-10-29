@@ -50,7 +50,7 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 "===================================================================
 --- ../chrome/browser/resources/extensions/detail_view.html.ts
 +++ gen/chrome/browser/resources/extensions/preprocessed/detail_view.html.ts
-@@ -365,16 +365,13 @@
+@@ -365,18 +365,13 @@
              <span>$i18n{itemPinToToolbar}</span>
            </extensions-toggle-row>
          \` : ''}
@@ -60,8 +60,10 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 -              @change="\${this.onAllowIncognitoChange_}">
 +          <extensions-toggle-row id="allow-incognito" ?checked="\${this.data.incognitoAccess.isActive}" class="hr" @change="\${this.onAllowIncognitoChange_}">
              <div>
-               <div>$i18n{itemAllowIncognito}</div>
--              <div class="section-content">$i18n{incognitoInfoWarning}</div>
+               <div>\${this.getItemAllowIncognitoString_()}</div>
+-              <div class="section-content">
+-                \${this.getIncognitoInfoWarningString_()}
+-              </div>
 -              <div class="section-content" id="allow-incognito-warning"
 -                  ?hidden="\${!this.data.incognitoAccessPendingChange}">
 +              <div class="section-content">$i18n{privateInfoWarning}<span ?hidden="\${!this.data.incognitoAccess.isActive}"> $i18n{spanningInfoWarning}</span><span> $i18n{privateAndTorInfoWarning}</span></div>
@@ -243,8 +245,8 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
    \${this.syncedDevices_.map((syncedDevice, index) => html\`
      <history-synced-device-card .device="\${syncedDevice.device}"
          .lastUpdateTime="\${syncedDevice.lastUpdateTime}"
-         .tabs="\${syncedDevice.tabs}"
-@@ -21,26 +20,23 @@
+         .windows="\${syncedDevice.windows}" .searchTerm="\${this.searchTerm}"
+@@ -19,26 +18,23 @@
          @opened-changed="\${this.onCardOpenedChanged_}" data-index="\${index}">
      </history-synced-device-card>
    \`)}
@@ -276,7 +278,7 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
    <div id="history-sync-optin" class="history-sync-optin">
      \${this.isSignInState_(HistorySignInState.SIGNED_OUT) ||
              this.isSignInState_(HistorySignInState.WEB_ONLY_SIGNED_IN) ?
-@@ -135,12 +131,11 @@
+@@ -133,12 +129,11 @@
        </cr-button>
      \`}
    </div>
@@ -291,6 +293,23 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
          <button id="menuOpenButton" class="dropdown-item"
              @click="\${this.onOpenAllClick_}">
            $i18n{openAll}
+"
+`;
+
+exports[`mangled files should have up to date snapshots ./chromium_src/chrome/browser/resources/password_manager/site_favicon.html.lit_mangler.ts should match snapshot 1`] = `
+"===================================================================
+--- ../chrome/browser/resources/password_manager/site_favicon.html
++++ gen/chrome/browser/resources/password_manager/preprocessed/site_favicon.html
+@@ -1,7 +1,3 @@
+-<div id="favicon" style="background-image: \${this.getBackgroundImage_()}"
+-    ?hidden="\${this.showDownloadedIcon_}">
++<div id="favicon" style="background-image: \${this.getBackgroundImage_()}" ?hidden="\${this.showDownloadedIcon_}">
+ </div>
+-<img is="cr-auto-img" id="downloadedFavicon"
+-    ?hidden="\${!this.showDownloadedIcon_}"
+-    @load="\${this.onLoad_}" @error="\${this.onLoadError_}"
+-    auto-src="\${this.url}">
++<img is="cr-auto-img" id="downloadedFavicon" ?hidden="\${!this.showDownloadedIcon_}" @load="\${this.onLoad_}" @error="\${this.onLoadError_}">
 "
 `;
 
@@ -2109,18 +2128,11 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 "
 `;
 
-exports[`mangled files should have up to date snapshots ./chromium_src/chrome/browser/resources/settings/privacy_page/privacy_page.html.lit_mangler.ts should match snapshot 1`] = `
+exports[`mangled files should have up to date snapshots ./chromium_src/chrome/browser/resources/settings/privacy_page/privacy_page.html.ts.lit_mangler.ts should match snapshot 1`] = `
 "===================================================================
---- ../chrome/browser/resources/settings/privacy_page/privacy_page.html
-+++ gen/chrome/browser/resources/settings/preprocessed/privacy_page/privacy_page.html
-@@ -1,5 +1,5 @@
--  <settings-section page-title="$i18n{privacyPageTitle}">
-+<settings-section page-title="$i18n{privacyPageTitle}">
-     \${this.showClearBrowsingDataDialog_ ? html\`
-       <settings-clear-browsing-data-dialog
-           @close="\${this.onCbdDialogClose_}"
-           @browsing-data-deleted="\${this.onBrowsingDataDeleted_}">
-@@ -10,40 +10,17 @@
+--- ../chrome/browser/resources/settings/privacy_page/privacy_page.html.ts
++++ gen/chrome/browser/resources/settings/preprocessed/privacy_page/privacy_page.html.ts
+@@ -16,40 +16,17 @@
            @close="\${this.onPrivacyGuideDialogClose_}">
        </settings-privacy-guide-dialog>
      \` : ''}
@@ -2169,17 +2181,15 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 "
 `;
 
-exports[`mangled files should have up to date snapshots ./chromium_src/chrome/browser/resources/settings/privacy_page/security/security_page.html.lit_mangler.ts should match snapshot 1`] = `
+exports[`mangled files should have up to date snapshots ./chromium_src/chrome/browser/resources/settings/privacy_page/security/security_page.html.ts.lit_mangler.ts should match snapshot 1`] = `
 "===================================================================
---- ../chrome/browser/resources/settings/privacy_page/security/security_page.html
-+++ gen/chrome/browser/resources/settings/preprocessed/privacy_page/security/security_page.html
-@@ -1,30 +1,17 @@
- <!-- #html_wrapper_imports_start
- import {SafeBrowsingSetting} from './safe_browsing_types.js';
- import {HttpsFirstModeSetting} from './security_page.js';
-+import {loadTimeData} from '../../i18n_setup.js';
- #html_wrapper_imports_end -->
+--- ../chrome/browser/resources/settings/privacy_page/security/security_page.html.ts
++++ gen/chrome/browser/resources/settings/preprocessed/privacy_page/security/security_page.html.ts
+@@ -6,29 +6,15 @@
+ import {loadTimeData} from '../../i18n_setup.js';
  
+ export function getHtml(this: SettingsSecurityPageElement) {
+   return html\`<!--_html_template_start_-->
 -  <settings-subpage page-title="$i18n{securityPageTitle}"
 -      learn-more-url="$i18n{safeBrowsingHelpCenterURL}"
 -      route-path="\${this.routePath}">
@@ -2209,7 +2219,7 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
                  <h3 class="description-header">
                    $i18n{columnHeadingWhenOn}
                  </h3>
-@@ -84,44 +71,24 @@
+@@ -88,44 +74,24 @@
                    </li>
                  </ul>
                </div>
@@ -2258,7 +2268,7 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
        </settings-radio-group>
      </div>
      \${this.enableHttpsFirstModeNewSettings_ ? html\`
-@@ -161,19 +128,12 @@
+@@ -165,19 +131,12 @@
      \` : ''}
      <div class="cr-row first">
        <h2 class="cr-title-text">$i18n{advancedPageTitle}</h2>
@@ -2280,7 +2290,7 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
        \${this.showSecureDnsSetting_ ? html\`
          <settings-secure-dns id="secureDnsSettingOld">
          </settings-secure-dns>
-@@ -182,21 +142,10 @@
+@@ -186,21 +145,10 @@
      \${this.enableHttpsFirstModeNewSettings_ && this.showSecureDnsSetting_ ? html\`
        <settings-secure-dns class="hr" id="secureDnsSettingNew">
        </settings-secure-dns>
@@ -2304,7 +2314,7 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
      \${this.enableSecurityKeysSubpage_ ? html\`
        <cr-link-row id="securityKeysSubpageTrigger" class="hr"
            label="$i18n{securityKeysTitle}"
-@@ -205,20 +154,12 @@
+@@ -209,20 +157,12 @@
            role-description="$i18n{subpageArrowRoleDescription}">
        </cr-link-row>
      \` : ''}
@@ -2485,11 +2495,11 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 "
 `;
 
-exports[`mangled files should have up to date snapshots ./chromium_src/chrome/browser/resources/settings/settings_main/settings_main.html.lit_mangler.ts should match snapshot 1`] = `
+exports[`mangled files should have up to date snapshots ./chromium_src/chrome/browser/resources/settings/settings_main/settings_main.html.ts.lit_mangler.ts should match snapshot 1`] = `
 "===================================================================
---- ../chrome/browser/resources/settings/settings_main/settings_main.html
-+++ gen/chrome/browser/resources/settings/preprocessed/settings_main/settings_main.html
-@@ -42,14 +42,9 @@
+--- ../chrome/browser/resources/settings/settings_main/settings_main.html.ts
++++ gen/chrome/browser/resources/settings/preprocessed/settings_main/settings_main.html.ts
+@@ -50,14 +50,9 @@
      </div>
    \` : '')}
  
@@ -2505,14 +2515,15 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
  
    \${cache(this.showAiPage_(this.pageVisibility_?.ai) ? html\`
      <div slot="view" id="ai">
-@@ -75,18 +70,18 @@
+@@ -83,19 +78,19 @@
        </settings-search-page-index>
      \` : '')}
    </div>
  
 -<if expr="not is_chromeos">
 +
-   \${cache(this.showPage_(this.pageVisibility_?.defaultBrowser) ? html\`
+   \${cache(!this.settingsRefresh2026Enabled_ &&
+       this.showPage_(this.pageVisibility_?.defaultBrowser) ? html\`
      <div slot="view" id="defaultBrowser">
        \${cache(this.renderPlugin_(this.routes_.DEFAULT_BROWSER) ? html\`
          <settings-default-browser-page></settings-default-browser-page>
@@ -2522,11 +2533,11 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 -</if>
  
 +
-   \${cache(this.showPage_(this.pageVisibility_?.onStartup) ? html\`
+   \${cache(!this.settingsRefresh2026Enabled_ &&
+       this.showPage_(this.pageVisibility_?.onStartup) ? html\`
      <div slot="view" id="onStartup">
        \${cache(this.renderPlugin_(this.routes_.ON_STARTUP) ? html\`
-         <settings-on-startup-page></settings-on-startup-page>
-@@ -96,17 +91,14 @@
+@@ -106,17 +101,14 @@
  
    \${cache(this.showPage_(this.pageVisibility_?.languages) ? html\`
      <div slot="view" id="languages">
@@ -2547,14 +2558,15 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
      </div>
    \` : '')}
  
-@@ -126,18 +118,18 @@
-       \` : '')}
-     </div>
+@@ -142,19 +134,19 @@
+       this.showPage_(this.pageVisibility_?.general) ? html\`
+     <div slot="view" id="general">General page placeholder</div>
    \` : '')}
  
 -<if expr="not is_chromeos">
 +
-   \${cache(this.showPage_(this.pageVisibility_?.system) ? html\`
+   \${cache(!this.settingsRefresh2026Enabled_ &&
+       this.showPage_(this.pageVisibility_?.system) ? html\`
      <div slot="view" id="system">
        \${cache(this.renderPlugin_(this.routes_.SYSTEM) ? html\`
 -        <settings-system-page></settings-system-page>
@@ -2565,11 +2577,11 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 -</if>
  
 +
-   \${cache(this.showPage_(this.pageVisibility_?.reset) ? html\`
+   \${cache(!this.settingsRefresh2026Enabled_ &&
+       this.showPage_(this.pageVisibility_?.reset) ? html\`
      <div slot="view" id="reset">
        \${cache(this.renderPlugin_(this.routes_.RESET) ? html\`
-         <settings-reset-page></settings-reset-page>
-@@ -150,5 +142,52 @@
+@@ -168,7 +160,54 @@
        <settings-about-page role="main" class="cr-centered-card-container">
        </settings-about-page>
      \` : '')}
@@ -2623,15 +2635,20 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 +        </settings-brave-extensions-page-index>
 +      </div>
 +    \` : '')}</cr-view-manager>
+ <!--_html_template_end_-->\`;
+ }
 "
 `;
 
-exports[`mangled files should have up to date snapshots ./chromium_src/chrome/browser/resources/settings/settings_menu/settings_menu.html.lit_mangler.ts should match snapshot 1`] = `
+exports[`mangled files should have up to date snapshots ./chromium_src/chrome/browser/resources/settings/settings_menu/settings_menu.html.ts.lit_mangler.ts should match snapshot 1`] = `
 "===================================================================
---- ../chrome/browser/resources/settings/settings_menu/settings_menu.html
-+++ gen/chrome/browser/resources/settings/preprocessed/settings_menu/settings_menu.html
-@@ -1,132 +1,133 @@
--    <div role="navigation">
+--- ../chrome/browser/resources/settings/settings_menu/settings_menu.html.ts
++++ gen/chrome/browser/resources/settings/preprocessed/settings_menu/settings_menu.html.ts
+@@ -4,96 +4,107 @@
+ 
+ export function getHtml(this: SettingsMenuElement) {
+   return html\`<!--_html_template_start_-->
+     <div role="navigation">
 -      <cr-menu-selector id="menu" selectable="a:not(#extensionsLink)"
 -          attr-for-selected="href" @iron-activate="\${this.onIronActivate_}"
 -          @click="\${this.onLinkClick_}" selected-attribute="selected">
@@ -2639,19 +2656,24 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 -            id="people" href="/people"
 -            ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.people)}"
 -            class="cr-nav-menu-item">
--<if expr="not _google_chrome">
-+<div role="navigation">
 +      <cr-menu-selector id="menu" selectable="a:not(#extensionsLink)" attr-for-selected="href" @iron-activate="\${this.onIronActivate_}" @click="\${this.onLinkClick_}" selected-attribute="selected">
 +        <a role="menuitem" id="people" href="/people" ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.people)}" class="cr-nav-menu-item">
+           \${this.settingsRefresh2026Enabled_ ? html\`
+             <cr-icon icon="settings20:home"></cr-icon>
+             <!-- TODO(b/574662686): Update "Home" string -->
+             <span class="menu-label">Home</span>
+           \` : html\`
+-<if expr="not _google_chrome">
 +
-           <cr-icon icon="settings:person"></cr-icon>
+             <cr-icon icon="settings:person"></cr-icon>
 -</if>
 -<if expr="_google_chrome">
--          <cr-icon icon="settings-internal:google-g"></cr-icon>
+-            <cr-icon icon="settings-internal:google-g"></cr-icon>
 -</if>
 +
 +
-           <span class="menu-label">$i18n{peoplePageTitle}</span>
+             <span class="menu-label">$i18n{peoplePageTitle}</span>
+           \`}
            <cr-ripple></cr-ripple>
 -        </a>
 -        <a role="menuitem" id="autofill" href="/autofill"
@@ -2698,6 +2720,11 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 -            ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.performance)}">
 -          <cr-icon icon="settings:speed"></cr-icon>
 -          <span class="menu-label">$i18n{performancePageTitle}</span>
+-          <cr-ripple></cr-ripple>
+-        </a>
+-        <a role="menuitem" id="ai" href="/ai"
+-            ?hidden="\${!this.showAiPageMenuItem_()}"
+-            class="cr-nav-menu-item">
 +        </a><a role="menuitem" id="braveWallet" href="/web3" class="cr-nav-menu-item" ?hidden="\${this.shouldHideMenuItem_(
 +          this.pageVisibility_?.braveWallet)}">
 +    <cr-icon icon="product-brave-wallet"></cr-icon>
@@ -2714,14 +2741,10 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 +    <span class="menu-label">$i18n{braveSync}</span>
 +    <cr-ripple></cr-ripple>
 +  </a><a role="menuitem" id="search" href="/search" class="cr-nav-menu-item">
-+          <cr-icon icon="settings:search"></cr-icon>
-+          <span class="menu-label">$i18n{searchPageTitle}</span>
-           <cr-ripple></cr-ripple>
--        </a>
--        <a role="menuitem" id="ai" href="/ai"
--            ?hidden="\${!this.showAiPageMenuItem_()}"
--            class="cr-nav-menu-item">
-+        </a><a role="menuitem" id="extensions" href="/extensions" class="cr-nav-menu-item" ?hidden="\${this.shouldHideMenuItem_(
++      <cr-icon icon="settings:search"></cr-icon>
++      <span class="menu-label">$i18n{searchPageTitle}</span>
++      <cr-ripple></cr-ripple>
++    </a><a role="menuitem" id="extensions" href="/extensions" class="cr-nav-menu-item" ?hidden="\${this.shouldHideMenuItem_(
 +          this.pageVisibility_?.extensions)}">
 +    <cr-icon icon="browser-extensions"></cr-icon>
 +    <span class="menu-label">$i18n{braveDefaultExtensions}</span>
@@ -2742,34 +2765,39 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 -          <span class="menu-label">$i18n{appearancePageTitle}</span>
 -          <cr-ripple></cr-ripple>
 -        </a>
--        <a role="menuitem" id="search" href="/search" class="cr-nav-menu-item">
--          <cr-icon icon="settings:search"></cr-icon>
--          <span class="menu-label">$i18n{searchPageTitle}</span>
--          <cr-ripple></cr-ripple>
--        </a>
++        
+         \${!this.settingsRefresh2026Enabled_ ? html\`
+-          <a role="menuitem" id="search" href="/search"
+-              class="cr-nav-menu-item">
+-            <cr-icon icon="settings:search"></cr-icon>
+-            <span class="menu-label">$i18n{searchPageTitle}</span>
+-            <cr-ripple></cr-ripple>
+-          </a>
 -<if expr="not is_chromeos">
--        <a role="menuitem" id="defaultBrowser" class="cr-nav-menu-item"
--          href="/defaultBrowser"
--          ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.defaultBrowser)}">
-+        
-+        
+-          <a role="menuitem" id="defaultBrowser" class="cr-nav-menu-item"
+-              href="/defaultBrowser"
+-              ?hidden="\${this.shouldHideMenuItem_(
++          
 +
-+        <a role="menuitem" id="defaultBrowser" class="cr-nav-menu-item" href="/defaultBrowser" ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.defaultBrowser)}">
-           <cr-icon icon="settings:web-asset"></cr-icon>
-           <span class="menu-label">$i18n{defaultBrowser}</span>
-           <cr-ripple></cr-ripple>
-         </a>
++          <a role="menuitem" id="defaultBrowser" class="cr-nav-menu-item" href="/defaultBrowser" ?hidden="\${this.shouldHideMenuItem_(
+                   this.pageVisibility_?.defaultBrowser)}">
+             <cr-icon icon="settings:web-asset"></cr-icon>
+             <span class="menu-label">$i18n{defaultBrowser}</span>
+             <cr-ripple></cr-ripple>
+           </a>
 -</if>
--        <a role="menuitem" id="onStartup" href="/onStartup"
--            class="cr-nav-menu-item"
--            ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.onStartup)}">
+-          <a role="menuitem" id="onStartup" href="/onStartup"
+-              class="cr-nav-menu-item"
+-              ?hidden="\${this.shouldHideMenuItem_(
 +
-+        <a role="menuitem" id="onStartup" href="/onStartup" class="cr-nav-menu-item" ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.onStartup)}">
-           <cr-icon icon="settings:power-settings-new"></cr-icon>
-           <span class="menu-label">$i18n{onStartup}</span>
-           <cr-ripple></cr-ripple>
-         </a>
-         <div class="menu-separator"></div>
++          <a role="menuitem" id="onStartup" href="/onStartup" class="cr-nav-menu-item" ?hidden="\${this.shouldHideMenuItem_(
+                   this.pageVisibility_?.onStartup)}">
+             <cr-icon icon="settings:power-settings-new"></cr-icon>
+             <span class="menu-label">$i18n{onStartup}</span>
+             <cr-ripple></cr-ripple>
+           </a>
+           <div class="menu-separator"></div>
+         \` : ''}
 -        <a role="menuitem" id="languages" href="/languages"
 -            class="cr-nav-menu-item"
 -            ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.languages)}">
@@ -2782,14 +2810,11 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
            <span class="menu-label">$i18n{languagesPageTitle}</span>
            <cr-ripple></cr-ripple>
          </a>
--        <a role="menuitem" id="downloads" href="/downloads"
--            class="cr-nav-menu-item"
--            ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.downloads)}">
-+        <a role="menuitem" id="downloads" href="/downloads" class="cr-nav-menu-item" ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.downloads)}">
-           <cr-icon icon="settings:download"></cr-icon>
-           <span class="menu-label">$i18n{downloadsPageTitle}</span>
-           <cr-ripple></cr-ripple>
-         </a>
+@@ -106,67 +117,54 @@
+             <span class="menu-label">$i18n{downloadsPageTitle}</span>
+             <cr-ripple></cr-ripple>
+           </a>
+         \` : ''}
 -        <a role="menuitem" id="accessibility" href="/accessibility"
 -            class="cr-nav-menu-item"
 -            ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.a11y)}">
@@ -2798,25 +2823,44 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
            <span class="menu-label">$i18n{a11yPageTitle}</span>
            <cr-ripple></cr-ripple>
          </a>
+         \${this.settingsRefresh2026Enabled_ ? html\`
+-          <a role="menuitem" id="search" href="/search"
+-              class="cr-nav-menu-item">
+-            <cr-icon icon="settings:search"></cr-icon>
+-            <span class="menu-label">$i18n{searchPageTitle}</span>
+-            <cr-ripple></cr-ripple>
+-          </a>
+-          <a role="menuitem" id="general" href="/general"
+-              class="cr-nav-menu-item"
+-              ?hidden="\${this.shouldHideMenuItem_(
++          
++          <a role="menuitem" id="general" href="/general" class="cr-nav-menu-item" ?hidden="\${this.shouldHideMenuItem_(
+                   this.pageVisibility_?.general)}">
+             <cr-icon icon="settings:build"></cr-icon>
+             <!-- TODO(b/574664004): Update "General" string -->
+             <span class="menu-label">General</span>
+             <cr-ripple></cr-ripple>
+           </a>
+         \` : html\`
 -<if expr="not is_chromeos">
--        <a role="menuitem" id="system" href="/system" class="cr-nav-menu-item"
--            ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.system)}">
 +
-+        <a role="menuitem" id="system" href="/system" class="cr-nav-menu-item" ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.system)}">
-           <cr-icon icon="settings:build"></cr-icon>
-           <span class="menu-label">$i18n{systemPageTitle}</span>
-           <cr-ripple></cr-ripple>
-         </a>
+           <a role="menuitem" id="system" href="/system" class="cr-nav-menu-item"
+               ?hidden="\${this.shouldHideMenuItem_(
+                   this.pageVisibility_?.system)}">
+             <cr-icon icon="settings:build"></cr-icon>
+             <span class="menu-label">$i18n{systemPageTitle}</span>
+             <cr-ripple></cr-ripple>
+           </a>
 -</if>
--        <a role="menuitem" id="reset" href="/reset"
--            ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.reset)}"
--            class="cr-nav-menu-item">
 +
-+        <a role="menuitem" id="reset" href="/reset" ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.reset)}" class="cr-nav-menu-item">
-           <cr-icon icon="settings:restart-alt"></cr-icon>
-           <span class="menu-label">$i18n{resetPageTitle}</span>
-           <cr-ripple></cr-ripple>
-         </a>
+           <a role="menuitem" id="reset" href="/reset"
+               ?hidden="\${this.shouldHideMenuItem_(this.pageVisibility_?.reset)}"
+               class="cr-nav-menu-item">
+             <cr-icon icon="settings:restart-alt"></cr-icon>
+             <span class="menu-label">$i18n{resetPageTitle}</span>
+             <cr-ripple></cr-ripple>
+           </a>
+         \`}
 -        <div ?hidden="\${this.hideBottomMenuSeparator_()}"
 -            class="menu-separator"></div>
 -        <a role="menuitem" id="extensionsLink" class="cr-nav-menu-item"
@@ -2852,16 +2896,17 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
        </cr-menu-selector>
      </div>
  
+ <!--_html_template_end_-->\`;
 "
 `;
 
-exports[`mangled files should have up to date snapshots ./chromium_src/chrome/browser/resources/settings/site_settings/add_site_dialog.html.lit_mangler.ts should match snapshot 1`] = `
+exports[`mangled files should have up to date snapshots ./chromium_src/chrome/browser/resources/settings/site_settings/add_site_dialog.html.ts.lit_mangler.ts should match snapshot 1`] = `
 "===================================================================
---- ../chrome/browser/resources/settings/site_settings/add_site_dialog.html
-+++ gen/chrome/browser/resources/settings/preprocessed/site_settings/add_site_dialog.html
-@@ -1,23 +1,17 @@
--    <cr-dialog id="dialog" close-text="$i18n{close}">
-+<cr-dialog id="dialog" close-text="$i18n{close}">
+--- ../chrome/browser/resources/settings/site_settings/add_site_dialog.html.ts
++++ gen/chrome/browser/resources/settings/preprocessed/site_settings/add_site_dialog.html.ts
+@@ -6,24 +6,18 @@
+   return html\`<!--_html_template_start_-->
+     <cr-dialog id="dialog" close-text="$i18n{close}">
        <div slot="title">$i18n{addSiteTitle}</div>
        <div slot="body">
 -        <cr-input id="site" label="$i18n{addSite}"
