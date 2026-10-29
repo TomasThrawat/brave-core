@@ -1,8 +1,8 @@
 diff --git a/chrome/browser/extensions/api/BUILD.gn b/chrome/browser/extensions/api/BUILD.gn
-index 9245c228a7f49076371f07312c6e168f77d8fa3f..f0806fe80934cef90cc1cdc82e301db07a29bc32 100644
+index c804a14672ec2df3d84e07e4954ea31d673e004b..07aa8e36bc5797d812472f69d3adc073cacca94c 100644
 --- a/chrome/browser/extensions/api/BUILD.gn
 +++ b/chrome/browser/extensions/api/BUILD.gn
-@@ -60,7 +60,7 @@ group("api_implementations") {
+@@ -61,7 +61,7 @@ group("api_implementations") {
      "//chrome/browser/extensions/api/webrtc_logging_private",
    ]
  

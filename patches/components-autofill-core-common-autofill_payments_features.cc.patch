@@ -1,5 +1,5 @@
 diff --git a/components/autofill/core/common/autofill_payments_features.cc b/components/autofill/core/common/autofill_payments_features.cc
-index a4feabfe8d618960444c3ec9757229c2d7321082..f75fb49658c73d566ed7e64de1d68bbf5e9fc376 100644
+index 5f347d35466b1eb78d2ced79531acac0011c3852..b2356dc4e808faca57c55f238edc170abfa32389 100644
 --- a/components/autofill/core/common/autofill_payments_features.cc
 +++ b/components/autofill/core/common/autofill_payments_features.cc
 @@ -52,14 +52,8 @@ BASE_FEATURE(kAutofillEnableAiCardRecommendation,

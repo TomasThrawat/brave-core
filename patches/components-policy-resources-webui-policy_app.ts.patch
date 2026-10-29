@@ -1,8 +1,8 @@
 diff --git a/components/policy/resources/webui/policy_app.ts b/components/policy/resources/webui/policy_app.ts
-index 8d4227c4e302c01101ba350b0d5e95cc94dcc415..dcd01233c612612b62d9f930ebc685485dc6bcaf 100644
+index 0ecf0ebd22380f9d9d264088ef20b65c70ec1899..19d4eadf987ba413e60c1e7f46754e270f84cb6a 100644
 --- a/components/policy/resources/webui/policy_app.ts
 +++ b/components/policy/resources/webui/policy_app.ts
-@@ -175,7 +175,7 @@ export class PolicyAppElement extends CrLitElement {
+@@ -171,7 +171,7 @@ export class PolicyAppElement extends CrLitElement {
                    policyNames['precedence']?.policyNames,
                  ].includes(knownPolicyNames) &&
                          knownPolicyNamesSet.has(name) ?

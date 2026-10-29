@@ -1,5 +1,5 @@
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9f7bd168a 100644
+index 74afda3b17de9d899e5d67358cfc4fafa26aa78d..b4655dcc2571a12937a7efd5c3adba4c165c35e7 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -319,6 +319,7 @@
@@ -61,7 +61,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        copied_from_base_feature_if: "overridden",
      },
      {
-@@ -1423,7 +1427,7 @@
+@@ -1434,7 +1438,7 @@
        // objects that live on the compositor thread.
        // [1] https://drafts.csswg.org/css-animations-2/#timeline-triggers
        name: "CompositorTimelineTrigger",
@@ -70,7 +70,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
      },
      {
        name: "CompressionDictionaryTransport",
-@@ -1501,6 +1505,7 @@
+@@ -1512,6 +1516,7 @@
        // https://github.com/WICG/controlled-frame/blob/main/README.md for more
        // info.
        name: "ControlledFrame",
@@ -78,7 +78,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        public: true,
        status: "stable",
      },
-@@ -2947,6 +2952,7 @@
+@@ -2967,6 +2972,7 @@
      },
      {
        name: "ExtensionScriptTagging",
@@ -86,7 +86,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        public: true,
        status: "stable",
        base_feature: "ExtensionScriptTagging",
-@@ -3068,7 +3074,8 @@
+@@ -3088,7 +3094,8 @@
      },
      {
        name: "FencedFrames",
@@ -96,7 +96,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        // This helps enable and expose the <fencedframe> element, but note that
        // blink::features::kFencedFrames must be enabled as well, as we require
        // the support of the browser process to fully enable the feature.
-@@ -3157,6 +3164,7 @@
+@@ -3177,6 +3184,7 @@
      {
        // In-development features for the File System Access API.
        name: "FileSystemAccessAPIExperimental",
@@ -104,7 +104,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        status: "experimental",
      },
      {
-@@ -3171,6 +3179,7 @@
+@@ -3191,6 +3199,7 @@
      {
        // Non-OPFS File System Access API.
        name: "FileSystemAccessLocal",
@@ -112,7 +112,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        status: {"default": "stable"},
      },
      {
-@@ -3298,6 +3307,7 @@
+@@ -3325,6 +3334,7 @@
      },
      {
        name: "Fledge",
@@ -120,7 +120,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        public: true,
      },
      {
-@@ -4095,7 +4105,7 @@
+@@ -4149,7 +4159,7 @@
          "Android": "stable",
          "default": "",
        },
@@ -129,7 +129,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        copied_from_base_feature_if: "overridden",
      },
      {
-@@ -4486,6 +4496,7 @@
+@@ -4540,6 +4550,7 @@
      // "experimental" is the support on other platforms.
      {
        name: "MiddleClickAutoscroll",
@@ -137,7 +137,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        status: "test",
      },
      // Killswitch for crbug.com/40062462 fix.
-@@ -5013,6 +5024,7 @@
+@@ -5067,6 +5078,7 @@
      {
        // PARAKEET ad serving runtime flag/JS API.
        name: "Parakeet",
@@ -145,7 +145,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        origin_trial_feature_name: "Parakeet",
      },
      {
-@@ -5233,6 +5245,7 @@
+@@ -5295,6 +5307,7 @@
        //
        // It also has some feature params defined throughout the codebase.
        name: "Prerender2",
@@ -153,7 +153,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        status: "stable",
      },
      {
-@@ -5440,6 +5453,7 @@
+@@ -5502,6 +5515,7 @@
      // but we still keep this flag for future phase tests.
      {
        name: "ReduceUserAgentMinorVersion",
@@ -161,7 +161,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        status: "stable",
      },
      {
-@@ -6994,7 +7008,7 @@
+@@ -7061,7 +7075,7 @@
          "ChromeOS": "stable",
          "default": "",
        },
@@ -170,7 +170,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        copied_from_base_feature_if: "overridden",
      },
      {
-@@ -7171,6 +7185,7 @@
+@@ -7249,6 +7263,7 @@
      },
      {
        name: "UserMediaElement",
@@ -178,7 +178,7 @@ index a9c72eb600834eddb9e49f31cc068a93de819ab4..af7a002e4bbd70fd9f47b6a6875a71f9
        status: "stable",
        public: true,
      },
-@@ -8074,5 +8089,10 @@
+@@ -8161,5 +8176,10 @@
        // crbug.com/435623334.
        name: "XSLTSpecialTrial",
      },

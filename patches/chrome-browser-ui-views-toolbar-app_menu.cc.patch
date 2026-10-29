@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/ui/views/toolbar/app_menu.cc b/chrome/browser/ui/views/toolbar/app_menu.cc
-index 335290dc2dff5cd319ab43bcc54753244f2f5260..a1a663c398f9c6e270c809dbb1be79d30ea429b0 100644
+index 148c99f863e74c6ccec0215f8aa4203d467fcaf1..21541e01e8cbe907dc72a6d80e8e52cf0fb53978 100644
 --- a/chrome/browser/ui/views/toolbar/app_menu.cc
 +++ b/chrome/browser/ui/views/toolbar/app_menu.cc
 @@ -1578,8 +1578,10 @@ views::View* AppMenu::GetZoomAppMenuViewForTest(views::MenuItemView* root) {
@@ -25,7 +25,7 @@ index 335290dc2dff5cd319ab43bcc54753244f2f5260..a1a663c398f9c6e270c809dbb1be79d3
        item->SetSelectedColorId(ui::kColorAppMenuRowBackgroundHovered);
      };
  
-@@ -1723,10 +1725,11 @@ void AppMenu::PopulateMenu(MenuItemView* parent, MenuModel* model) {
+@@ -1730,10 +1732,11 @@ void AppMenu::PopulateMenu(MenuItemView* parent, MenuModel* model) {
        default:
          if (IsOtherProfileCommand(model->GetCommandIdAt(i))) {
            ui::ImageModel icon = model->GetIconAt(i);

@@ -1,5 +1,5 @@
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 179b9b729ed457aefde93d71dbbc2e2040dc974f..6af5b1c3d13288529b200352e59fc474c184fe0e 100644
+index 526a88c27bef0530551f3e26207c7622bdfa16b9..6445f4fb32ce33468d19ba3c33766076cb876cfc 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -392,6 +392,7 @@ default_compiler_configs = [

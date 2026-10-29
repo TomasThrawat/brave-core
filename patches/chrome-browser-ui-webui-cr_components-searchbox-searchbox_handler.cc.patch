@@ -1,8 +1,8 @@
 diff --git a/chrome/browser/ui/webui/cr_components/searchbox/searchbox_handler.cc b/chrome/browser/ui/webui/cr_components/searchbox/searchbox_handler.cc
-index 2e588e50e09699b3cd27339a636dace6ba5b3987..47d03c2e977a6409855a87c84950c26ba560e9ab 100644
+index 37d8918992d52afd7f89c396a67e9b83e740f0a7..2db2f2cd8be5cc6697feeec9e57ff66720af10b3 100644
 --- a/chrome/browser/ui/webui/cr_components/searchbox/searchbox_handler.cc
 +++ b/chrome/browser/ui/webui/cr_components/searchbox/searchbox_handler.cc
-@@ -829,7 +829,16 @@ std::string SearchboxHandler::AutocompleteIconToResourceName(
+@@ -848,7 +848,16 @@ std::string SearchboxHandler::VectorIconToResourceName(
  #endif
  
    if (resource_name.empty()) {
@@ -20,7 +20,7 @@ index 2e588e50e09699b3cd27339a636dace6ba5b3987..47d03c2e977a6409855a87c84950c26b
          << "Every autocomplete icon must have an equivalent SVG "
             "resource for the NTP Realbox. icon.name: '"
          << icon.name << "'";
-@@ -1473,7 +1482,7 @@ void SearchboxHandler::QueryAutocomplete(
+@@ -1498,7 +1507,7 @@ void SearchboxHandler::QueryAutocomplete(
    current_query_id_ = query_id;
  
    std::u16string input_with_keyword = input;
