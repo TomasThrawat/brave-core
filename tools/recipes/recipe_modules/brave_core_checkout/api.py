@@ -96,6 +96,15 @@ class BraveCoreCheckoutApi(RecipeApi):
         # The brave-core root of the standard job layout, resolved once.
         self._root = self.m.path.abs(self.m.path.brave_core)
 
+    def set_brave_core_ref(self, ref: str) -> None:
+        """Check out *ref* instead of the `brave_core_ref` property, e.g. a ref
+        the recipe only resolves at run time.
+
+        Args:
+            ref: A fully-qualified ref, such as `refs/heads/cr159`.
+        """
+        self._brave_core_ref = ref
+
     @property
     def _git_ref(self) -> GitRef:
         """The `brave_core_ref`, checked to be safe to pass to git."""
