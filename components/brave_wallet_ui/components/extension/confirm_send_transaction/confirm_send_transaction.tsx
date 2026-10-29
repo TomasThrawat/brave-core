@@ -163,9 +163,7 @@ export function ConfirmSendTransaction() {
   }
 
   const originInfo = selectedPendingTransaction.originInfo
-  const isBraveWalletOrigin = React.useMemo(() => {
-    return originInfo?.originSpec === 'chrome://wallet'
-  }, [originInfo])
+  const isBraveWalletOrigin = originInfo?.originSpec === 'chrome://wallet'
 
   return (
     <>

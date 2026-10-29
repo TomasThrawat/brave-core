@@ -220,7 +220,7 @@ class TransactionParserTests: XCTestCase {
       createdTime: Date(),
       submittedTime: Date(),
       confirmedTime: Date(),
-      originInfo: nil,
+      originInfo: .init(originSpec: "", eTldPlusOne: ""),
       chainId: chainId,
       effectiveRecipient: effectiveRecipient,
       isRetriable: false,

@@ -566,7 +566,7 @@ extension BraveWallet.TransactionInfo {
     createdTime: Date(timeIntervalSince1970: 1_636_399_671),  // Monday, November 8, 2021 7:27:51 PM
     submittedTime: Date(timeIntervalSince1970: 1_636_399_673),  // Monday, November 8, 2021 7:27:53 PM
     confirmedTime: Date(timeIntervalSince1970: 1_636_402_508),  // Monday, November 8, 2021 8:15:08 PM
-    originInfo: nil,
+    originInfo: .init(originSpec: "", eTldPlusOne: ""),
     chainId: BraveWallet.FilecoinMainnet,
     effectiveRecipient: nil,
     isRetriable: false,
@@ -597,7 +597,7 @@ extension BraveWallet.TransactionInfo {
     createdTime: Date(timeIntervalSince1970: 1_715_280_785),  // Thursday, May 9, 2024 6:53:05 PM
     submittedTime: Date(timeIntervalSince1970: 1_715_280_790),  // Thursday, May 9, 2024 6:53:10 PM
     confirmedTime: Date(timeIntervalSince1970: 1_715_281_790),  // Thursday, May 9, 2024 7:09:50 PM
-    originInfo: nil,
+    originInfo: .init(originSpec: "", eTldPlusOne: ""),
     chainId: BraveWallet.BitcoinMainnet,
     effectiveRecipient: nil,
     isRetriable: false,
@@ -630,7 +630,7 @@ extension BraveWallet.TransactionInfo {
     createdTime: Date(timeIntervalSince1970: 1_745_873_951),  // Mon, Apr 28, 2025 20:59:11
     submittedTime: Date(timeIntervalSince1970: 1_745_873_960),  // Mon, Apr 28, 2025 20:59:20
     confirmedTime: Date(timeIntervalSince1970: 1_745_874_960),  // Mon, Apr 28, 2025 21:16:00
-    originInfo: nil,
+    originInfo: .init(originSpec: "", eTldPlusOne: ""),
     chainId: BraveWallet.ZCashMainnet,
     effectiveRecipient: nil,
     isRetriable: false,

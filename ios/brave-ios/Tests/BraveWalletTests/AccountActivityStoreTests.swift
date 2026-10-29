@@ -670,7 +670,7 @@ class AccountActivityStoreTests: XCTestCase {
       createdTime: firstTransactionDate,
       submittedTime: Date(),
       confirmedTime: Date(),
-      originInfo: nil,
+      originInfo: .init(originSpec: "", eTldPlusOne: ""),
       chainId: BraveWallet.FilecoinMainnet,
       effectiveRecipient: nil,
       isRetriable: false,
