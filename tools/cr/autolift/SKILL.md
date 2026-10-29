@@ -31,7 +31,9 @@ the Chromium checkout, where the upstream history lives.
   branch's upstream (see [step 1](#1-reset-and-rebase)).
 - **Bump range:** printed by `brockit lift` as "Changes for this bump"
   (`158.0.8117.1..158.0.8127.2`). Culprits for the lift's own breakage are in
-  this range.
+  this range. Brockit doesn't print it for a new milestone's first bump;
+  `autolift.py lift` then reports the `package.json` versions of the upstream
+  and `HEAD` (cr159: `158.0.8127.2..159.0.8131.1`).
 - **Branch range:** "Changes since base version"
   (`157.0.8103.15..158.0.8127.2`). It covers every bump already on the branch;
   use it to verify culprit hashes and to look for earlier fixes.
@@ -91,7 +93,11 @@ commit body and in the report. Then carry on. Examples from cr158:
   are squashed by the next `brockit rebase`.
 - Platform-centric fixes get the platform tag: `--tagged=Android` for Android,
   `--tagged=iOS` for iOS (cr158: the iOS key pinning includes). Fixes that
-  aren't ready get `--tagged=WIP`. Combine as `--tagged=Android,WIP`.
+  aren't ready get `--tagged=WIP`. Combine as `--tagged=Android,WIP`; a repeated
+  `--tagged` keeps only the last.
+- `git cr commit` commits everything staged, and `follow-renames` and `git mv`
+  stage as they go. Check `git diff --cached --stat` before each commit (cr159:
+  a tool fix swept up the lift's staged renames).
 - A fix without an upstream culprit (a latent Brave bug that only now shows up)
   is committed without `--culprit`; say why in the body.
 - Simple IWYU fixes, adding an include that a Brave file used to get
@@ -101,8 +107,11 @@ commit body and in the report. Then carry on. Examples from cr158:
   new GN dep, a moved header, a `chromium_src` change) is an ordinary culprit
   fix.
 - Messages follow `../agents/shared/skills/cl-description/cl-description.md`: a
-  `[Component]`-style subject under 72 columns, a body wrapped at 72 that
-  explains why. Wrap with
+  `[Component]`-style subject under 72 columns, counting the `[cr<N>]` and tag
+  prefixes the hook adds, and a body wrapped at 72 that explains why. To fix a
+  committed subject, add an `amend!` commit with
+  `git commit --allow-empty -F <file>`: `amend! <old subject>`, a blank line,
+  then the whole new message, prefixes included. Wrap with
   `vpython3 ../agents/shared/skills/cl-description/scripts/wrap_lines.py <file>`
   and pass the file with `-F`. Leave out the `Bug:` line. Never add
   `Co-Authored-By` or any other trailer: on a fixup, a body becomes the squashed
@@ -168,11 +177,14 @@ commit body and in the report. Then carry on. Examples from cr158:
     matters (a `make_unique<>` site, a declaration whose type changes) and
     confirm the rest don't (an inherited member pointer or type alias).
   - Anchor an insertion on the most specific line next to it, often a unique
-    comment right below the insertion point (`grep -c` it in the pristine file),
-    rather than on a `DOTALL` span from the function's signature. A single-line
-    anchor can be a literal `pattern` whose `replace` re-emits it after the
-    inserted block (cr158: the web panel block in
-    `BrowserView::OnActiveTabChanged`).
+    comment right below the insertion point (`grep -c` it in the pristine file).
+    A distinctive line can be a literal `pattern` whose `replace` re-emits it
+    after the inserted block (cr158: the web panel block in
+    `BrowserView::OnActiveTabChanged`). A generic line, unique only by chance (a
+    `DUMP_WILL_BE_NOTREACHED()`, a bare `return`), must be constrained to its
+    scope: a `DOTALL` `re_pattern` from the function's definition that can't
+    cross its closing brace (`(?:(?!\n\}\n).)*?`), up to the enclosing block
+    (cr159: `VectorIconToResourceName` in `searchbox_handler.cc.yaml`).
   - Keep substitutions generic when every occurrence is an intended replacement.
     Swapping in a Brave subclass is a literal `pattern`/`replace` pair,
     `make_unique<Foo>` → `make_unique<BraveFoo>`, with `count: 0` and a comment
@@ -182,6 +194,15 @@ commit body and in the report. Then carry on. Examples from cr158:
     token of the class in the file should change (cr158: `BookmarkBarView` in
     `browser_view.{h,cc}`); `make_unique<Foo>` swaps alone are the literal pairs
     below.
+  - Use the line and import rewriters rather than a regex that re-emits its
+    anchor: `add_before_line`/`add_after_line` to insert next to a line, and
+    `ts.add_import` for a TypeScript import (cr159: the `security_page.html.ts`
+    `loadTimeData` import). `plaster --help` lists them all.
+  - Keep a plaster's C++ to a call: anything beyond a trivial substitution goes
+    in a helper in the `chromium_src` shadow (an anonymous-namespace function
+    before the upstream include), and the `code`/`replace` calls it, passing
+    members by reference (`docs/plaster_dos_and_donts.md`; cr159:
+    `ShouldOfferBraveShareIcon()` for the sharing hub).
   - `#define X virtual X` becomes `make_virtual`; a `_ChromiumImpl` rename
     becomes `preempt_function_impl` (or a regex insertion at the top of the
     body) with any helper in the `chromium_src` shadow; injected `friend` lines
@@ -202,14 +223,31 @@ commit body and in the report. Then carry on. Examples from cr158:
   - Commit with `git cr commit --tagged=plaster`.
 
 - Plaster `description`s read like a commit message: a subject saying what, a
-  blank line, then why. Keep `count: 1` unless a different count is deliberate
-  and commented.
+  blank line, then why. They describe the code as it is for the next reader, not
+  how it got there: an upstream flag that was removed or a hook that moved
+  belongs in the commit message (cr159: `screenshot_flow.cc.yaml`).
 - Keep `set_feature_flag_default_state` / `BASE_OVERRIDDEN_FEATURE` pins even
   when upstream's default now matches. Remove one only if upstream deleted the
   feature, together with its entry in `app/feature_defaults_unittest.cc`.
 
 ### Writing Brave code
 
+- Before writing a fix, read the `docs/best_practices.md` topics it touches
+  (`chromium-src-overrides.md` for shadows, `build-system.md` for GN,
+  `frontend.md` for WebUI, the `coding-standards*.md` for C++, `android.md`),
+  and check the result against them before committing.
+- `../agents/knowledge_base/rules/` holds Chromium's review rules, each a short
+  rule, why, and examples, and they are worth reading for every fix. Each
+  directory's `COMMON_METADATA` maps rules to upstream paths (`path_expression`)
+  and content (`content_patterns`). It is upstream's, and its paths never name
+  `brave/`, so no Brave file matches by itself: map the Brave path to the
+  upstream one it stands for before matching (`chromium_src/<path>` and
+  `rewrite/<path>.yaml` to `<path>`, `patches/` to the file the patch applies
+  to, and Brave code under `brave/browser/`, `brave/components/` or
+  `brave/android/` to its upstream counterpart, e.g. `chrome/browser/`). Match
+  `content_patterns` against the Brave code itself. Add `general/` for the
+  language (`cpp_*`, `java`, `rust`). Treat `severity: should_fix` rules as
+  review findings.
 - If upstream code builds in Chromium but not in Brave, find the Brave
   discrepancy instead of plastering upstream. The usual leak is
   `-iquote //brave/chromium_src`: every quoted include of an upstream header
@@ -282,10 +320,7 @@ vpython3 tools/cr/autolift/autolift.py lift --continue
 # Reset cr<N>, set its base as upstream, and start brockit rebase (step 1).
 vpython3 tools/cr/autolift/autolift.py prepare 158
 
-# Continue a stopped rebase, resolving the mechanical conflicts (step 1).
-vpython3 tools/cr/autolift/autolift.py rebase-continue 158
-
-# New milestone only, at the very end: push it and open its PR (step 9).
+# New milestone only, at the very end: push it and open its PR (step 10).
 vpython3 tools/cr/autolift/autolift.py publish 159
 
 # Outcome, failed steps and distinct errors of a build log.
@@ -327,7 +362,7 @@ For a new milestone, with no `origin/cr<N>` yet, it creates `cr<N>` from the
 base (for 159: from `origin/cr158`), sets the same upstream, and skips the
 rebase, since the branch has nothing of its own yet. Go straight to
 [step 2](#2-lift): `--to=@latest-for-branch` takes the major from the branch
-name. The new branch stays local until [step 9](#9-publish-a-new-milestone).
+name. The new branch stays local until [step 10](#10-publish-a-new-milestone).
 
 The base is `origin/master` once master's Chromium version is on milestone
 `N-1`, which is when the previous milestone has landed, and `origin/cr<N-1>`
@@ -352,52 +387,66 @@ master as it was before the merge. In that rebase:
 - The `cr<N>` pull request, if there is one, still targets `cr<N-1>`. Don't
   retarget it yourself; list it in the report for the CI job.
 
-The rebase also autosquashes `fixup!` and `amend!` commits. It stops on each
-conflict. Continue it with:
+The rebase also autosquashes `fixup!` and `amend!` commits. Brockit resolves the
+conflicts that have a fixed answer as it goes:
+
+- a patch with a yaml is regenerated from its plaster;
+- a `tools/cr/M<N>_codehealth.md` the base doesn't have takes the branch's last
+  version;
+- the "Update from Chromium" commit takes its own `projects.chrome.tag` and the
+  newer `PinsListTimestamp`, when that is the file's single conflicting hunk;
+- a raw patch the base changed only in its context takes the commit's version.
+
+It stops on any other conflict, listing the commit and the files left. Resolve
+them with the recipes below, `git add` them, and carry on with:
 
 ```sh
-vpython3 tools/cr/autolift/autolift.py rebase-continue <N>
+vpython3 tools/cr/brockit.py rebase --continue
 ```
 
-It resolves the mechanical conflicts (the first two recipes below), runs
-`git rebase --continue`, and repeats until the rebase finishes. When it stops,
-it lists the files left: resolve them with the other recipes, `git add` them,
-and run it again. Recipes:
+To drop the commit it stopped on, use
+`vpython3 tools/cr/brockit.py rebase --skip`. Never use plain
+`git rebase --continue` or `--skip`: they skip Brockit's handling of the squash
+messages and its conflict rules for the rest of the rebase. When the rebase
+finishes, Brockit lists what it resolved, by rule. Recipes for what it leaves:
 
-- **`patches/*.patch` with a yaml:** rerun the plaster first,
-  `plaster apply patches/<name>.patch`, rather than resolving anything in the
-  patch. `rebase-continue` does this. If the yaml conflicts too, resolve the
-  yaml first: usually the newer design on the base branch supersedes the
-  branch's version (cr158: the `.onion` CORS fix in cr157 covered the preflight
-  case the cr158 commit added). Check that it still applies to the new source
-  and covers what the branch's version did, then regenerate the patch. The same
-  patch may conflict again in a later "Update patches" commit; regenerate it
-  again.
-- **`tools/cr/M<N>_codehealth.md`:** take `origin/cr<N>`'s version.
-  `rebase-continue` does this.
-- **The "Update from Chromium" commit**, when the base branch moved to a newer
-  minor version: in `package.json`, keep the commit's `projects.chrome.tag`. In
+- **`patches/*.patch` with a yaml:** Brockit leaves these when the yaml
+  conflicts too, when the plaster no longer applies, or when the Chromium
+  checkout isn't on the version rebased so far (it warns). Don't resolve
+  anything in the patch. Resolve a conflicted yaml first: usually the newer
+  design on the base branch supersedes the branch's version (cr158: the `.onion`
+  CORS fix in cr157 covered the preflight case the cr158 commit added). Check
+  that it still applies to the new source and covers what the branch's version
+  did, then regenerate the patch with `plaster apply patches/<name>.patch`. The
+  same patch may conflict again in a later "Update patches" commit; regenerate
+  it again.
+- **`tools/cr/M<N>_codehealth.md`**, when the base has a copy too: take
+  `origin/cr<N>`'s version.
+- **A cr<N> fix that the base fixed itself** (cr159: guards for cr158 commits
+  that were only built on Linux): take the base's version. A commit left empty
+  is dropped with `brockit.py rebase --skip`; one left partly applied gets an
+  `amend!` that rewords it to what remains.
+- **The "Update from Chromium" commit**, when Brockit leaves it because more
+  than the version bump conflicts: in `package.json`, keep the commit's
+  `projects.chrome.tag`. In
   `chromium_src/net/tools/transport_security_state_generator/input_file_parsers.cc`,
   keep the newer of the two `PinsListTimestamp` values with its "Last updated"
-  comment, so pins never move back in time.
-- **Raw patches** (no yaml): check what the base branch changed in the patch
-  since the merge-base,
-  `git diff $(git merge-base <base> <commit>) <base> -- <patch>`. If it changed
-  only context lines (lines starting `+ ` or `- ` in that diff, not
-  `++`/`+-`/`-+`/`--`), the commit's version, made against the newer source, is
-  right: `git checkout --theirs <patch>`. Otherwise merge Brave's lines by hand.
-  Raw patches should be rare. A patch can look raw only at that point in
-  history, because a later commit on the branch adds its yaml (cr158:
-  `location_bar_view.cc`, converted earlier in the same branch): after the
-  rebase, check whether the branch tip has a yaml for it. Convert each one that
-  is still raw in a follow-up commit, as below.
+  comment, so pins never move back in time. Resolve the rest on the merits.
+- **Raw patches** (no yaml) that the base changed beyond their context: merge
+  Brave's lines by hand. Brockit lists the raw patches it took the commit's
+  version of at the end of the rebase. Raw patches should be rare. A patch can
+  look raw only at that point in history, because a later commit on the branch
+  adds its yaml (cr158: `location_bar_view.cc`, converted earlier in the same
+  branch): after the rebase, check whether the branch tip has a yaml for each
+  one. Convert each one that is still raw in a follow-up commit, as below.
 - **A `fixup!` of a pinned group that touches files the group moves later**
   (modify/delete conflict): Brockit places such fixups right after the group's
   first commit. Keep HEAD's state for that step (and undo anything git's rename
   detection applied to the old path), then requeue the same `fixup <sha>` line
   after the group's last `squash` line in
-  `$(git rev-parse --git-path rebase-merge)/git-rebase-todo`. Check afterwards
-  that the squashed commit has the fixup's change.
+  `$(git rev-parse --git-path rebase-merge)/git-rebase-todo`, before running
+  `--continue`. Check afterwards that the squashed commit has the fixup's
+  change.
 - **Lit mangler snapshot** (`tools/chromium_src/lit_mangler/__snapshots__/`):
   resolve and add. It is regenerated at the end.
 - **Test filters and other files:** resolve on the merits. When both sides
@@ -405,7 +454,7 @@ and run it again. Recipes:
 
 A commit whose changes are already on the base branch is dropped automatically
 ("patch contents already upstream"). File a Tooling TODO for any recipe you had
-to apply by hand that `rebase-continue` or Brockit could have applied.
+to apply by hand that Brockit could have applied.
 
 ### 2. Lift
 
@@ -449,7 +498,10 @@ For each item, find the culprit first
   symbol names in Java, C++, GN, DEPS, `test/filters` and
   `app/feature_defaults_unittest.cc`, and fix what remains. Its formatter also
   reflows unrelated tracker files; revert those. Check that the patch applied to
-  the moved upstream file.
+  the moved upstream file. cr159: settings checked in its Lit templates, so
+  `foo.html` became `foo.html.ts`; the `.lit_mangler.ts` files move with them,
+  and a patch's `<if expr>` wrappers must stay inside `getHtml()`'s template
+  literal (a closing `</if>` landed after the function).
 - **Files that cannot be patched anymore: deleted.** Find where the code went.
   When a class is folded into its base (cr158: `TabContainerImpl` into
   `TabContainer`), the Brave subclass rebases onto the new class. Every method
@@ -487,7 +539,10 @@ After `--continue`:
   (stale `.patchinfo` metadata is a likely cause). Unremarkable, sensible
   changes: commit as `--fixup` to the "Apply-fixed 🩹 patches from ..." commit.
   Significant changes: their own commit with a culprit, `--tagged=WIP` if
-  unsure.
+  unsure. A yaml that fails ("Unexpected number of matches") is handled like
+  "Plaster failed to fix patches" above (cr159: upstream moved the searchbox
+  icon lookup into another function; the old patch applied there with fuzz, but
+  the regex no longer matched).
 
 ### 3. Linux build
 
@@ -514,6 +569,12 @@ one round shows many failures. Loop:
 "cannot make progress due to previous N errors" with many steps remaining is
 normal: those steps depend on the failures. If a log ends with an error about
 `out/Component/build.guard`, two builds overlapped. Make sure only one runs.
+
+To check one fix quickly, build just the targets it touches with the same
+command and flags, e.g. `--target=brave_unit_tests`,
+`--target=chrome/browser/resources/settings:lint_ts` or
+`--target=chrome/test/data/webui/tab_search:build_ts`. A full `brave:all` build
+is still what closes the step.
 
 ### 4. Linux tests
 
@@ -544,7 +605,11 @@ Finding coverage:
   accelerator mode reported for the web contents. It failed, and that exposed
   that the fix itself was wrong (`SetAcceleratorHandling()` only applies when
   the `WebView` is the contents' delegate). The final test checks that a browser
-  accelerator isn't held back for the renderer.
+  accelerator isn't held back for the renderer. For a plastered fix, check this
+  directly: remove the plaster's lines from the upstream file, rebuild the test
+  target and run it, then restore them with `plaster apply <yaml>` and check
+  that the `.patch` is unchanged (cr159: `BraveThemeSourceTest` crashed without
+  the system-profile check).
 - Some code only builds in official builds (e.g. `enable_crash_dialog`). Its
   tests can't run in a Component build: write them, and list them as unverified
   in the report.
@@ -574,29 +639,75 @@ manglers.
 
 ```sh
 pnpm run init --target_os=android
-pnpm run build --target_os=android --target_arch=x64 \
-    --target_android_output_format=apk --target=brave:all \
+pnpm run build Static --target_os=android --target_arch=x64 \
+    --target=brave:all --gn=android_static_analysis:on \
     > .autolift/cr<N>/build-android.log 2>&1
 ```
 
-Use `x64`, so that tests can run on an emulator. The out dir is
-`../out/android_Static`. This command has no `--ignore_compile_failure`, so it
-stops at the first error: expect one round per failure. Re-run
-`pnpm run init --target_os=android` after changing `brave/DEPS`. It also checks
-that the new deps sync. All Android fixes get `--tagged=Android`.
+Use `x64`, so that tests can run on an emulator. `android_static_analysis=on`
+runs Android lint, error-prone and the bytecode checks as blocking build steps,
+so their findings fail this build; by default (`build_server`) they run in a
+daemon and don't block. The out dir is `../out/android_Static`. The build starts
+with `gn gen --check`, which catches deps that a Linux-only `gn check` missed
+(cr159: a cr158 change to direct deps left three Brave targets without their
+Android deps); when a lift changes GN deps, expect Android to need its own. Read
+the `gn gen` warnings too: "Build argument has no effect" on an arg Brave sets
+means upstream removed it, and the build stays green without it (cr159:
+`android_override_version_name`, so the APK lost Brave's version name). This
+command has no `--ignore_compile_failure`, so it stops at the first error:
+expect one round per failure. Re-run `pnpm run init --target_os=android` after
+changing `brave/DEPS`. It also checks that the new deps sync. All Android fixes
+get `--tagged=Android`.
 
-For tests, run only the Android tests for code touched by Android fixes. They
-need an emulator: `tools/android/avd/avd.py install` and `start` with an x64
-config such as `tools/android/avd/proto/android_34_google_apis_x64.textpb`. That
-downloads several GB and needs `/dev/kvm`. If no device can be had, list the
-Android tests as unverified in the report.
+For tests, run only the Android tests for code touched by Android fixes.
+Robolectric tests run on the host, with `brave/script` on `PYTHONPATH`:
 
-### 7. Update this document
+```sh
+PYTHONPATH=$PWD/script ../out/android_Static/bin/run_brave_junit_tests \
+    -f '*<Suite>*' > .autolift/cr<N>/test-junit.log 2>&1
+```
+
+The whole suite takes under a minute (cr159: 1179 tests). Instrumentation tests,
+such as `BytecodeTest`, need an emulator: `tools/android/avd/avd.py install` and
+`start` with an x64 config such as
+`tools/android/avd/proto/android_34_google_apis_x64.textpb`. That downloads
+several GB and needs `/dev/kvm`. If no device can be had, list the Android tests
+as unverified in the report.
+
+### 7. Code health review
+
+Once the Linux and Android builds pass, run `tools/cr/codehealth_review.md` over
+the run's whole range, `<old tag>..<new tag>` (cr159:
+`158.0.8127.2..159.0.8131.1`). It writes or updates
+`tools/cr/M<N>_codehealth.md` with what fails silently: overrides that stopped
+applying, re-enabled features, Brave copies that missed upstream fixes. For a
+branch that isn't on origin yet, "what the rebase already fixed" is
+`<base>..cr<N>` locally, not `origin/master..origin/cr<N>`. Follow its own
+instructions (subagents, static verification only), and commit the tracker with
+any change to `codehealth_review.md` as `Version CodeHealth tracker`.
+
+The review is finished only when every subagent it started has come back with
+its final result. A completion notice that says the agent still has background
+work running is interim: wait for its final notice, and check that no review
+agent is still listed as running, before writing the tracker. Then fold in
+anything that arrived after the tracker was written before publishing (cr159 was
+published before one sweep had finished). Tell each review subagent not to leave
+commands running in the background once it has its result, and before writing
+the tracker check `pgrep -af 'git grep|rg |python'` for strays left by a sweep
+(cr159: two slow `git grep -f` runs outlived the sweep that started them, and
+kept it from finishing).
+
+Don't fix what the review finds, regressions included: the tracker is where
+they're picked up, so list them in the report and carry on. It is the last step
+before the run stops, or before a new milestone is published: don't publish
+without it.
+
+### 8. Update this document
 
 Before finishing, fold what the run taught into this file, following
 [Maintaining this document](#maintaining-this-document), and commit it.
 
-### 8. Wrap up
+### 9. Wrap up
 
 - `autolift.py verify-culprits <base> <branch range>` reports no problems.
 - `git status` is clean. Untracked files are scratch you created, or deps
@@ -604,11 +715,12 @@ Before finishing, fold what the run taught into this file, following
 - No build is left running.
 - Print the report.
 
-### 9. Publish a new milestone
+### 10. Publish a new milestone
 
 Only when `prepare` created the branch in step 1, because `origin/cr<N>` didn't
 exist, and only once the whole run is done: the lift finished, the Linux and
-Android builds pass, and wrap-up is clean. Then:
+Android builds pass, the code health review is complete (every review subagent
+back) and committed, and wrap-up is clean. Then:
 
 ```sh
 vpython3 tools/cr/autolift/autolift.py publish <N>
@@ -735,19 +847,59 @@ failure looks like more than a lost include, name the culprit:
 - **Hand-written browser proxies replaced by generated ones**
   (`CustomizeChromeApiProxy` → `browserProxyFactory` from `*.mojom-webui.js`):
   update overrides and the JS strings inside browser tests, which no build step
-  checks.
+  checks. The generated handler includes Brave's mojom additions, so a Brave
+  proxy override that only forwarded them can go; upstream's test proxies then
+  need stubs for those methods (cr159: tab search).
+- **Elements migrated from Polymer to Lit** (cr159: `site-favicon`): a
+  `RegisterPolymerTemplateModifications` override no longer applies; port it to
+  a `.html.lit_mangler.ts`. A raw `.html` mangler can't add imports to the
+  generated `.html.ts`; once upstream checks in the `.html.ts`, add them with
+  plaster.
+- **Templates restructured into nested `${...}` templates** (cr159: the settings
+  menu's Search item): a mangler can't move elements between templates. Remove
+  upstream's element where it is (`mangleAll` with a predicate on the nested
+  template) and insert Brave's own where it wants it.
+- **Deleted `chromium_src` TS overrides leave stale build output**: the
+  preprocessed file in `gen/` keeps the override, and `html_to_wrapper`'s
+  template detection reads it. `touch` the upstream file (an mtime change only)
+  so the step reruns.
 - **New lint rules** (`@webui-eslint/lit-element-expressions`): fix every Brave
   template, including strings that lit_manglers inject into upstream templates.
   Boolean attributes set by a mangler use `''`, not `'true'`.
+  `@webui-eslint/no-re-exports` (cr159) rejects named re-exports outside barrel
+  files: an override re-exports upstream with `export *` (its own exports still
+  win), and Brave code imports from the original module.
 - **Brave replacements of upstream elements** (Brave's `cr-button`): declare
   properties upstream code now binds (`noink`) even if Brave's element ignores
   them.
+
+### Android bytecode redirects
+
+`changeMethodOwner` in `build/android/bytecode` matches by method name only.
+When upstream adds a method of the same name (an instance overload), the
+redirect rewrites its calls too, and the `__tracerefs` step fails with "DEX
+contains references to non-existent symbols". Check whether upstream now does
+what the Brave redirect added; if so remove the redirect, its target class, its
+`BytecodeTest` check and its `apk_for_test.flags` keep rule (cr159:
+`TabBrowserControlsConstraintsHelper.getObservableConstraints`).
 
 ### Android 32-bit
 
 `std::ranges::count_if` returns `ptrdiff_t`, which is `int` on 32-bit ARM, so
 comparisons with unsigned literals trip `-Wsign-compare`. Compare with signed
 literals. This was a latent Brave bug with no upstream culprit.
+
+### Android static analysis
+
+With `android_static_analysis=on`, error-prone and NullAway warnings fail the
+build ("Command failed because it wrote to stderr"), and `build-summary` shows
+no distinct errors: read the `warning: [Check]` lines after the failed
+`__errorprone` step. Nullable arrays are `byte @Nullable []`; `@Nullable byte[]`
+annotates the element type and trips `NullablePrimitiveArray` (cr159, after the
+NullAway update in the bump). Type-use positions need
+`org.chromium.build.annotations.Nullable`; `androidx.annotation.Nullable` isn't
+applicable there. A lambda parameter needs the same nullability as the interface
+method it implements.
 
 ## Report
 

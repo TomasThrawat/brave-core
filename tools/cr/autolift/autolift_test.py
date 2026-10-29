@@ -330,67 +330,6 @@ class PublishTest(unittest.TestCase):
         run.assert_not_called()
 
 
-class PlanConflictsTest(unittest.TestCase):
-    def test_sorts_files_by_recipe(self):
-        plan = autolift.plan_conflicts(
-            [
-                'patches/chrome-browser-foo.cc.patch',
-                'tools/cr/M158_codehealth.md',
-                'test/filters/browser_tests.filter',
-            ],
-            158,
-        )
-        self.assertEqual(plan.patches, ['patches/chrome-browser-foo.cc.patch'])
-        self.assertEqual(plan.trackers, ['tools/cr/M158_codehealth.md'])
-        self.assertEqual(plan.others, ['test/filters/browser_tests.filter'])
-
-    def test_conflicted_yaml_blocks_patch_regeneration(self):
-        plan = autolift.plan_conflicts(
-            [
-                'patches/services-network-cors-cors_url_loader.cc.patch',
-                'rewrite/services/network/cors/cors_url_loader.cc.yaml',
-            ],
-            158,
-        )
-        self.assertEqual(plan.patches, [])
-        self.assertEqual(len(plan.others), 2)
-
-    def test_other_milestones_tracker_is_not_taken(self):
-        plan = autolift.plan_conflicts(['tools/cr/M157_codehealth.md'], 158)
-        self.assertEqual(plan.trackers, [])
-        self.assertEqual(plan.others, ['tools/cr/M157_codehealth.md'])
-
-
-class RebaseContinueTest(unittest.TestCase):
-    def test_stops_and_lists_what_needs_the_agent(self):
-        brave = mock.MagicMock()
-        brave.is_rebase_in_progress.return_value = True
-        brave.run_git.return_value = 'test/filters/browser_tests.filter'
-        with mock.patch.object(autolift.repository, 'brave', brave):
-            result = autolift._cmd_rebase_continue(mock.Mock(milestone=158))
-        self.assertEqual(result, 2)
-        self.assertFalse(
-            any(c.args[:1] == ('rebase',) for c in brave.run_git.call_args_list)
-        )
-
-    def test_resolves_tracker_and_continues_until_done(self):
-        brave = mock.MagicMock()
-        brave.is_rebase_in_progress.side_effect = [True, False]
-        brave.run_git.side_effect = lambda *cmd, **_: (
-            'tools/cr/M158_codehealth.md' if cmd[0] == 'diff' else ''
-        )
-        with mock.patch.object(autolift.repository, 'brave', brave):
-            result = autolift._cmd_rebase_continue(mock.Mock(milestone=158))
-        self.assertEqual(result, 0)
-        calls = [c.args for c in brave.run_git.call_args_list]
-        self.assertIn(
-            ('checkout', 'origin/cr158', '--', 'tools/cr/M158_codehealth.md'),
-            calls,
-        )
-        self.assertIn(('add', '--', 'tools/cr/M158_codehealth.md'), calls)
-        self.assertIn(('rebase', '--continue'), calls)
-
-
 _LIFT_LOG = """\
 [18:10:59] 🚀 Brockit!                                          terminal.py:409
 [18:11:00] * Changes for this bump: https://chromium.googlesource.com/chromium/src/+log/158.0.8117.1..158.0.8127.2?pretty=fuller&n=10000  terminal.py:358
@@ -463,6 +402,22 @@ class SummarizeLiftTest(unittest.TestCase):
         self.assertTrue(summary.needs_attention)
 
 
+class WithPackageRangeTest(unittest.TestCase):
+    def test_fills_missing_bump_range_only(self):
+        summary = autolift.with_package_range(
+            autolift.summarize_lift('💥 Done!\n'), '158.0.1.0..159.0.2.0'
+        )
+        self.assertEqual(summary.bump_range, '158.0.1.0..159.0.2.0')
+        self.assertIsNone(summary.branch_range)
+
+    def test_keeps_printed_bump_range(self):
+        summary = autolift.with_package_range(
+            autolift.summarize_lift(_LIFT_LOG), '1.0.0.0..2.0.0.0'
+        )
+        self.assertNotEqual(summary.bump_range, '1.0.0.0..2.0.0.0')
+        self.assertIsNotNone(summary.bump_range)
+
+
 class LiftCommandTest(unittest.TestCase):
     def _lift(self, log_text: str, returncode: int = 0):
         directory = Path(tempfile.mkdtemp())
@@ -480,6 +435,7 @@ class LiftCommandTest(unittest.TestCase):
             mock.patch.object(
                 autolift.subprocess, 'run', side_effect=run
             ) as run_mock,
+            mock.patch.object(autolift, '_package_range', return_value=None),
         ):
             result = autolift._cmd_lift(mock.Mock(continue_=True))
         return result, run_mock, directory / 'cr158' / 'report.md'
