@@ -17,6 +17,7 @@ from recipe_modules import (
     brave_core_checkout,
     chromium_checkout,
     context,
+    depot_tools,
     git,
     raw_io,
     step,
@@ -41,6 +42,7 @@ document describes and record them in the report."""
 class DEPS(RecipeScriptApi):
     brave_core_checkout: brave_core_checkout.API
     context: context.API
+    depot_tools: depot_tools.API
     git: git.API
     raw_io: raw_io.API
     step: step.API
@@ -84,9 +86,15 @@ def RunSteps(api: DEPS, properties: InputProperties) -> None:
         api.brave_core_checkout.brave_core_layout(),
         api.context(cwd=root),
     ):
+        # The console gets a digest of Claude's stream, and the log all of it.
         api.step(
             'autolift',
             [
+                api.depot_tools.vpython3(),
+                api.resource('run_claude.py'),
+                '--log',
+                root / '.autolift' / f'cr{milestone}' / 'claude.jsonl',
+                '--',
                 'claude',
                 '--print',
                 _PROMPT.format(milestone=milestone, skill=SKILL),
@@ -97,6 +105,25 @@ def RunSteps(api: DEPS, properties: InputProperties) -> None:
                 '--verbose',
             ],
         )
+
+
+def _autolift_cmd(milestone: int) -> list[str]:
+    """The patterns `StepCommandRE` matches the `autolift` step against."""
+    return [
+        r'.*/vpython3',
+        r'RECIPE\[cr/autolift\]\.resources/run_claude\.py',
+        '--log',
+        rf'.*/b/src/brave/\.autolift/cr{milestone}/claude\.jsonl',
+        '--',
+        'claude',
+        '--print',
+        rf'(?s)Lift cr{milestone} by following tools/cr/autolift/SKILL\.md.*',
+        '--permission-mode',
+        'auto',
+        '--output-format',
+        'stream-json',
+        '--verbose',
+    ]
 
 
 def GenTests(api: TEST_DEPS):
@@ -120,18 +147,7 @@ def GenTests(api: TEST_DEPS):
             stdout=api.raw_io.output_text(_ls_remote),
         ),
         api.post_process(
-            post_process.StepCommandRE,
-            'autolift',
-            [
-                'claude',
-                '--print',
-                r'(?s)Lift cr159 by following tools/cr/autolift/SKILL\.md.*',
-                '--permission-mode',
-                'auto',
-                '--output-format',
-                'stream-json',
-                '--verbose',
-            ],
+            post_process.StepCommandRE, 'autolift', _autolift_cmd(159)
         ),
         api.post_process(post_process.StatusSuccess),
     )
@@ -145,18 +161,7 @@ def GenTests(api: TEST_DEPS):
         api.properties(milestone=158),
         api.post_process(post_process.DoesNotRun, 'find latest cr branch'),
         api.post_process(
-            post_process.StepCommandRE,
-            'autolift',
-            [
-                'claude',
-                '--print',
-                r'(?s)Lift cr158 .*',
-                '.*',
-                '.*',
-                '.*',
-                '.*',
-                '.*',
-            ],
+            post_process.StepCommandRE, 'autolift', _autolift_cmd(158)
         ),
         api.post_process(post_process.StatusSuccess),
         api.post_process(post_process.DropExpectation),
