@@ -58,8 +58,14 @@ _BACKGROUND_RE = re.compile(
     r'Output is being written to: (?P<path>\S+?)\.?(?:\s|$)'
 )
 
-# Sets a tool call's header, command and output apart.
-_DIVIDER = '  ┄┄┄┄'
+# What each line of a tool call is: its command, its output (or an error's),
+# and what is streamed from logs and background commands.
+_COMMAND = '  ┃ $ '
+# Later lines of a command line up with the command after the `$`.
+_COMMAND_GOES_ON = '  ┃   '
+_OUTPUT = '  ┆ '
+_ERROR = '  ✘ '
+_STREAMED = '  ┊ '
 
 # Brockit's log lines end in the right-aligned source of the log call.
 _LOG_SOURCE_RE = re.compile(r'\s{2,}[\w.]+\.py:\d+$')
@@ -107,10 +113,9 @@ def _tool_summary(name: str, tool_input: dict[str, Any]) -> list[str]:
     if isinstance(command, str) and tool_input.get('description'):
         # In full, as what a command does is often in its later lines.
         first, *rest = command.strip().splitlines()
-        lines.append(_DIVIDER)
-        lines += _wrap('  $ ', first, '    ')
+        lines += _wrap(_COMMAND, first, _COMMAND_GOES_ON)
         for line in rest:
-            lines += _wrap('    ', line)
+            lines += _wrap(_COMMAND_GOES_ON, line)
     return lines
 
 
@@ -185,12 +190,9 @@ def format_event(event: dict[str, Any]) -> list[str]:
                 continue
             if block.get('type') != 'tool_result':
                 continue
-            marker = '✘' if block.get('is_error') else '│'
-            tail = _tail(_result_text(block.get('content')))
-            if tail:
-                lines.append(_DIVIDER)
-            for line in tail:
-                lines += _wrap(f'  {marker} ', line)
+            prefix = _ERROR if block.get('is_error') else _OUTPUT
+            for line in _tail(_result_text(block.get('content'))):
+                lines += _wrap(prefix, line)
     elif kind == 'result':
         parts = [f'■ {subtype}']
         if event.get('duration_ms'):
@@ -248,7 +250,7 @@ class Follower:
                 lines.append(pending)
             for line in lines:
                 if cleaned := _clean(line):
-                    for text in _wrap('  ┆ ', cleaned):
+                    for text in _wrap(_STREAMED, cleaned):
                         self._emit(text)
             if done:
                 return
@@ -282,7 +284,7 @@ class LogsFollower:
             for path in sorted(self._directory.glob('*.log')):
                 if path not in seen:
                     seen.add(path)
-                    self._emit(f'  ┆ ▸ {path.name}')
+                    self._emit(f'{_STREAMED}▸ {path.name}')
                     self._followers.append(Follower(path, self._emit))
             if done:
                 return
