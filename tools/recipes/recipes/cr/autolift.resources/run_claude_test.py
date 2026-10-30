@@ -67,9 +67,36 @@ class FormatEventTest(unittest.TestCase):
                 'Rebase finished.',
                 'Checking.',
                 '▶ Bash: Status',
+                '  $ git status',
                 '▶ Read: /a',
                 '▶ TodoWrite',
             ],
+        )
+
+    def test_command_without_description_is_shown_once(self):
+        event = _assistant(
+            {'type': 'tool_use', 'name': 'Bash', 'input': {'command': 'ls'}}
+        )
+        self.assertEqual(run_claude.format_event(event), ['▶ Bash: ls'])
+
+    def test_log_sources_are_stripped(self):
+        text = '[12:02:25] * Changes for this bump        terminal.py:358   '
+        self.assertEqual(
+            run_claude.format_event(_tool_result(text)),
+            ['  │ [12:02:25] * Changes for this bump'],
+        )
+
+    def test_task_notification(self):
+        event = {
+            'type': 'system',
+            'subtype': 'task_notification',
+            'task_id': 'b1',
+            'status': 'completed',
+            'summary': 'Background command "Build" completed (exit code 0)',
+        }
+        self.assertEqual(
+            run_claude.format_event(event),
+            ['  ⏹ Background command "Build" completed (exit code 0)'],
         )
 
     def test_subagent_is_indented(self):
@@ -77,12 +104,16 @@ class FormatEventTest(unittest.TestCase):
         self.assertEqual(run_claude.format_event(event), ['    hi'])
 
     def test_tool_result_tail_collapses_progress(self):
-        text = '\n'.join(
-            ['1', '2', 'Rebasing (1/3)\rRebasing (3/3)', '', '4', '5', '6']
-        )
+        lines = [str(i) for i in range(run_claude.TAIL_LINES)]
+        text = '\n'.join(['Rebasing (1/3)\rRebasing (3/3)', '', *lines])
+        # The progress line is the one too many.
         self.assertEqual(
             run_claude.format_event(_tool_result(text)),
-            ['  │ 2', '  │ Rebasing (3/3)', '  │ 4', '  │ 5', '  │ 6'],
+            [f'  │ {line}' for line in lines],
+        )
+        self.assertEqual(
+            run_claude.format_event(_tool_result('a\rb\nc')),
+            ['  │ b', '  │ c'],
         )
 
     def test_tool_result_blocks_and_errors(self):
@@ -115,6 +146,91 @@ class FormatEventTest(unittest.TestCase):
             ),
             [],
         )
+
+
+def _started_in_background(task_id, path):
+    return _tool_result(
+        f'Command running in background with ID: {task_id}. Output is being '
+        f'written to: {path}. You will be notified when it completes.'
+    )
+
+
+def _notification(task_id):
+    return {
+        'type': 'system',
+        'subtype': 'task_notification',
+        'task_id': task_id,
+        'summary': f'{task_id} completed',
+    }
+
+
+class BackgroundTest(unittest.TestCase):
+    def setUp(self):
+        self._poll_interval = run_claude.POLL_INTERVAL
+        run_claude.POLL_INTERVAL = 0.01
+        self._tmp = tempfile.TemporaryDirectory()
+        self.output = Path(self._tmp.name) / 'b1.output'
+
+    def tearDown(self):
+        run_claude.POLL_INTERVAL = self._poll_interval
+        self._tmp.cleanup()
+
+    def test_background_commands(self):
+        self.assertEqual(
+            run_claude.background_commands(
+                _started_in_background('b1', '/tmp/tasks/b1.output')
+            ),
+            [('b1', Path('/tmp/tasks/b1.output'))],
+        )
+        self.assertEqual(
+            run_claude.background_commands(_tool_result('done')), []
+        )
+
+    def test_output_is_followed_until_notified(self):
+        printed = []
+        digest = run_claude.Digest(printed.append)
+        digest.handle_line(
+            json.dumps(_started_in_background('b1', self.output))
+        )
+        # Written after the command started, the last line unterminated.
+        self.output.write_text(
+            '[1/2] CXX a.o\n'
+            'step 1\rstep 2\n'
+            'error: boom        terminal.py:12\n'
+            'FAILED',
+            encoding='utf-8',
+        )
+        digest.handle_line(json.dumps(_notification('b1')))
+        digest.close()
+        self.assertEqual(
+            printed[1:],
+            [
+                '  ┆ [1/2] CXX a.o',
+                '  ┆ step 2',
+                '  ┆ error: boom',
+                '  ┆ FAILED',
+                '  ⏹ b1 completed',
+            ],
+        )
+
+    def test_followers_stop_when_the_run_ends(self):
+        printed = []
+        digest = run_claude.Digest(printed.append)
+        digest.handle_line(
+            json.dumps(_started_in_background('b1', self.output))
+        )
+        self.output.write_text('still building\n', encoding='utf-8')
+        digest.close()
+        self.assertEqual(printed[-1], '  ┆ still building')
+
+    def test_missing_output_file_prints_nothing(self):
+        printed = []
+        digest = run_claude.Digest(printed.append)
+        digest.handle_line(
+            json.dumps(_started_in_background('b1', self.output))
+        )
+        digest.handle_line(json.dumps(_notification('b1')))
+        self.assertEqual(printed[1:], ['  ⏹ b1 completed'])
 
 
 class RunTest(unittest.TestCase):
