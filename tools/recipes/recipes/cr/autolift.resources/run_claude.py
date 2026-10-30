@@ -58,7 +58,8 @@ _BACKGROUND_RE = re.compile(
     r'Output is being written to: (?P<path>\S+?)\.?(?:\s|$)'
 )
 
-_OUTPUT_DIVIDER = '  ┄┄┄┄'
+# Sets a tool call's header, command and output apart.
+_DIVIDER = '  ┄┄┄┄'
 
 # Brockit's log lines end in the right-aligned source of the log call.
 _LOG_SOURCE_RE = re.compile(r'\s{2,}[\w.]+\.py:\d+$')
@@ -106,6 +107,7 @@ def _tool_summary(name: str, tool_input: dict[str, Any]) -> list[str]:
     if isinstance(command, str) and tool_input.get('description'):
         # In full, as what a command does is often in its later lines.
         first, *rest = command.strip().splitlines()
+        lines.append(_DIVIDER)
         lines += _wrap('  $ ', first, '    ')
         for line in rest:
             lines += _wrap('    ', line)
@@ -184,8 +186,7 @@ def format_event(event: dict[str, Any]) -> list[str]:
             marker = '✘' if block.get('is_error') else '│'
             tail = _tail(_result_text(block.get('content')))
             if tail:
-                # Sets the output apart from the call above it.
-                lines.append(_OUTPUT_DIVIDER)
+                lines.append(_DIVIDER)
             for line in tail:
                 lines += _wrap(f'  {marker} ', line)
     elif kind == 'result':

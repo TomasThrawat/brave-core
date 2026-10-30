@@ -19,7 +19,7 @@ import unittest
 
 import run_claude
 
-_DIVIDER = run_claude._OUTPUT_DIVIDER
+_DIVIDER = run_claude._DIVIDER
 
 
 def _assistant(*content, parent=None):
@@ -73,6 +73,7 @@ class FormatEventTest(unittest.TestCase):
                 'Rebase finished.',
                 'Checking.',
                 '▶ Bash: Status',
+                _DIVIDER,
                 '  $ git status',
                 '▶ Read: /a',
                 '▶ TodoWrite',
@@ -93,6 +94,7 @@ class FormatEventTest(unittest.TestCase):
             run_claude.format_event(event),
             [
                 '▶ Bash: Check',
+                _DIVIDER,
                 f'  $ {"a" * width}',
                 '    b',
                 '    git diff --stat',
