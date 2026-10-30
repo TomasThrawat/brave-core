@@ -166,11 +166,10 @@
       "checkout",
       "--force",
       "-B",
-      "cr159",
-      "origin/cr159"
+      "cr159"
     ],
     "cwd": "[WORKSPACE]/b/src/brave",
-    "name": "reset cr159 to origin"
+    "name": "brave-core checkout branch"
   },
   {
     "cmd": [

@@ -20,7 +20,6 @@ from recipe_modules import (
     depot_tools,
     file,
     git,
-    path,
     raw_io,
     step,
 )
@@ -47,7 +46,6 @@ class DEPS(RecipeScriptApi):
     depot_tools: depot_tools.API
     file: file.API
     git: git.API
-    path: path.API
     raw_io: raw_io.API
     step: step.API
 
@@ -56,7 +54,6 @@ class DEPS(RecipeScriptApi):
 class TEST_DEPS(RecipeTestApi):
     brave_core_checkout: brave_core_checkout.TEST_API
     chromium_checkout: chromium_checkout.TEST_API
-    path: path.TEST_API
     raw_io: raw_io.TEST_API
 
 
@@ -83,33 +80,10 @@ def _latest_milestone(api: DEPS) -> int:
     return max(milestones)
 
 
-def _reset_branch(api: DEPS, root, branch: str) -> None:
-    """Resets the local *branch* to `origin`'s, dropping what an earlier run
-    left on it, so that the run starts from `origin` like a fresh checkout.
-    """
-    git_dir = root / '.git'
-    if api.path.exists(git_dir / 'rebase-merge') or api.path.exists(
-        git_dir / 'rebase-apply'
-    ):
-        # Left by an interrupted run. `--quit` keeps HEAD and the tree, which
-        # the checkout below replaces.
-        api.git('rebase', '--quit', name='drop stopped rebase', cwd=root)
-    api.git(
-        'checkout',
-        '--force',
-        '-B',
-        branch,
-        f'origin/{branch}',
-        name=f'reset {branch} to origin',
-        cwd=root,
-    )
-
-
 def RunSteps(api: DEPS, properties: InputProperties) -> None:
     milestone = properties.milestone or _latest_milestone(api)
     api.brave_core_checkout.set_brave_core_ref(f'refs/heads/cr{milestone}')
     root = api.brave_core_checkout.ensure_checkout()
-    _reset_branch(api, root, f'cr{milestone}')
     # The run's logs and report start empty, so that the agent only reads its
     # own run's. Those of earlier runs are kept with the job that ran them.
     run_dir = root / '.autolift' / f'cr{milestone}'
@@ -194,32 +168,12 @@ def GenTests(api: TEST_DEPS):
         api.post_process(post_process.DoesNotRun, 'find latest cr branch'),
         api.post_process(
             post_process.StepCommandContains,
-            'reset cr158 to origin',
-            ['checkout', '--force', '-B', 'cr158', 'origin/cr158'],
+            'brave-core checkout branch',
+            ['checkout', '--force', '-B', 'cr158'],
         ),
-        api.post_process(post_process.DoesNotRun, 'drop stopped rebase'),
         api.post_process(
             post_process.StepCommandRE, 'autolift', _autolift_cmd(158)
         ),
-        api.post_process(post_process.StatusSuccess),
-        api.post_process(post_process.DropExpectation),
-    )
-
-    # A rebase an earlier run left stopped is dropped before the reset.
-    yield api.test(
-        'stopped rebase',
-        api.brave_core_checkout.with_git_cache(),
-        api.brave_core_checkout.git_cache_populated(),
-        api.brave_core_checkout.existing_checkout(),
-        api.chromium_checkout.existing_checkout(),
-        api.path.dirs('b/src/brave/.git/rebase-merge'),
-        api.properties(milestone=159),
-        api.post_process(
-            post_process.StepCommandContains,
-            'drop stopped rebase',
-            ['rebase', '--quit'],
-        ),
-        api.post_process(post_process.MustRun, 'reset cr159 to origin'),
         api.post_process(post_process.StatusSuccess),
         api.post_process(post_process.DropExpectation),
     )

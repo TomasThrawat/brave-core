@@ -19,6 +19,7 @@ from PB.recipe_modules.brave.brave_core_checkout.properties import (
     InputProperties,
 )
 from recipe_api import RecipeApi
+from recipe_modules.git.api import RefKind
 
 if TYPE_CHECKING:
     from recipe_modules import brave_core_checkout
@@ -195,6 +196,34 @@ class BraveCoreCheckoutApi(RecipeApi):
             self.m.git_cache.clone_checkout(
                 CACHE_REPO_URL, dest, mirror_dir, ref, step_prefix=STEP_PREFIX
             )
+        if ref.kind == RefKind.HEAD:
+            self._attach_branch(ref.branch)
+
+    def _attach_branch(self, branch: str) -> None:
+        """Put the checkout on its local *branch*, at the commit checked out.
+
+        Whatever an earlier job left on that branch, or a rebase it left
+        stopped, is dropped, so the branch is always at its latest.
+        """
+        git_dir = self._root / '.git'
+        if self.m.path.exists(git_dir / 'rebase-merge') or self.m.path.exists(
+            git_dir / 'rebase-apply'
+        ):
+            # `--quit` keeps HEAD and the tree, which the checkout replaces.
+            self.m.git(
+                'rebase',
+                '--quit',
+                name=f'{STEP_PREFIX} drop stopped rebase',
+                cwd=self._root,
+            )
+        self.m.git(
+            'checkout',
+            '--force',
+            '-B',
+            branch,
+            name=f'{STEP_PREFIX} checkout branch',
+            cwd=self._root,
+        )
 
     def ensure_checkout(
         self, *, chromium_src: str | Path | None = None
