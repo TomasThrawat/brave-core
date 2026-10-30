@@ -1,0 +1,96 @@
+version: 2.1
+
+jobs:
+  build-android-arm64:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    working_directory: ~/brave-workspace
+    steps:
+      - checkout:
+          path: src/brave
+
+      - run:
+          name: Prepare Linux build host
+          command: |
+            set -euo pipefail
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+              build-essential ca-certificates curl python3 python-is-python3 xz-utils
+            if [ ! -f /swapfile ]; then
+              sudo fallocate -l 8G /swapfile
+              sudo chmod 600 /swapfile
+              sudo mkswap /swapfile
+            fi
+            sudo swapon /swapfile || true
+            free -h
+            df -h /
+
+      - run:
+          name: Install Node.js 24 and pnpm
+          command: |
+            set -euo pipefail
+            NODE_VERSION=24.16.0
+            NODE_DIST="node-v${NODE_VERSION}-linux-x64"
+            mkdir -p "$HOME/.local"
+            curl --retry 5 --retry-all-errors -fsSL \
+              "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_DIST}.tar.xz" \
+              -o /tmp/node.tar.xz
+            tar -xJf /tmp/node.tar.xz -C "$HOME/.local"
+            echo "export PATH=\"$HOME/.local/${NODE_DIST}/bin:\$PATH\"" >> "$BASH_ENV"
+            source "$BASH_ENV"
+            npm install --global pnpm@11.11.0
+            test "$(node --version)" = "v${NODE_VERSION}"
+            pnpm --version
+
+      - run:
+          name: Initialize Brave and Chromium Android sources
+          command: |
+            set -euo pipefail
+            cd src/brave
+            pnpm run init --target_os=android --target_arch=arm64
+          no_output_timeout: 60m
+
+      - run:
+          name: Install Android build dependencies
+          command: |
+            set -euo pipefail
+            sudo DEBIAN_FRONTEND=noninteractive ./src/build/install-build-deps.sh --android
+          no_output_timeout: 60m
+
+      - run:
+          name: Build Brave Android ARM64 APK
+          command: |
+            set -euo pipefail
+            source "$BASH_ENV"
+            cd src/brave
+            pnpm run build --target_os=android --target_arch=arm64 --target_android_output_format=apk
+          no_output_timeout: 60m
+
+      - run:
+          name: Collect APK artifacts and checksums
+          command: |
+            set -euo pipefail
+            mkdir -p artifacts
+            mapfile -d '' packages < <(
+              find src/out -type f \( -iname '*.apk' -o -iname '*.aab' \) -print0
+            )
+            if [ "${#packages[@]}" -eq 0 ]; then
+              echo "Build completed but no APK/AAB artifact was found under src/out."
+              exit 1
+            fi
+            cp --parents "${packages[@]}" artifacts/
+            sha256sum "${packages[@]}" | tee artifacts/SHA256SUMS.txt
+            find artifacts -type f -print
+
+      - store_artifacts:
+          path: artifacts
+          destination: brave-android-arm64
+
+workflows:
+  brave-android:
+    jobs:
+      - build-android-arm64:
+          filters:
+            branches:
+              only: master
