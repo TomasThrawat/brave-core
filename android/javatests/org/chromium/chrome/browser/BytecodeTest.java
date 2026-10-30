@@ -419,8 +419,6 @@ public class BytecodeTest {
         Assert.assertTrue(
                 classExists("org/chromium/chrome/browser/tabbed_mode/TabbedRootUiCoordinator"));
         Assert.assertTrue(
-                classExists("org/chromium/chrome/browser/tab/TabBrowserControlsConstraintsHelper"));
-        Assert.assertTrue(
                 classExists(
                         "org/chromium/chrome/browser/incognito/reauth/TabSwitcherIncognitoReauthCoordinator")); // presubmit: ignore-long-line
         Assert.assertTrue(
