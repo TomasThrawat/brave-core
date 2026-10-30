@@ -88,6 +88,9 @@ def RunSteps(api: DEPS, properties: InputProperties) -> None:
     # own run's. Those of earlier runs are kept with the job that ran them.
     run_dir = root / '.autolift' / f'cr{milestone}'
     api.file.rmtree('clear earlier run', run_dir)
+    # Each run builds from scratch, so that nothing an earlier run built hides
+    # a failure of this one.
+    api.file.rmtree('clear out dir', root.parent / 'out')
     with (
         api.brave_core_checkout.brave_core_layout(),
         api.context(cwd=root),
