@@ -77,6 +77,26 @@ class FormatEventTest(unittest.TestCase):
             ],
         )
 
+    def test_commands_are_shown_in_full(self):
+        width = run_claude.LINE_WIDTH
+        command = 'a' * width + 'b\ngit diff --stat'
+        event = _assistant(
+            {
+                'type': 'tool_use',
+                'name': 'Bash',
+                'input': {'command': command, 'description': 'Check'},
+            }
+        )
+        self.assertEqual(
+            run_claude.format_event(event),
+            [
+                '▶ Bash: Check',
+                f'  $ {"a" * width}',
+                '    b',
+                '    git diff --stat',
+            ],
+        )
+
     def test_command_without_description_is_shown_once(self):
         event = _assistant(
             {'type': 'tool_use', 'name': 'Bash', 'input': {'command': 'ls'}}
@@ -124,10 +144,13 @@ class FormatEventTest(unittest.TestCase):
         event = _tool_result([{'type': 'text', 'text': 'boom'}], True)
         self.assertEqual(run_claude.format_event(event), ['  ✘ boom'])
 
-    def test_long_lines_are_shortened(self):
-        [line] = run_claude.format_event(_tool_result('x' * 500))
-        self.assertEqual(len(line), len('  │ ') + run_claude.LINE_WIDTH)
-        self.assertTrue(line.endswith('…'))
+    def test_long_lines_go_on_over_more_lines(self):
+        width = run_claude.LINE_WIDTH
+        text = 'a' * width + 'b' * width + 'c'
+        self.assertEqual(
+            run_claude.format_event(_tool_result(text)),
+            [f'  │ {"a" * width}', f'  │ {"b" * width}', '  │ c'],
+        )
 
     def test_result(self):
         event = {

@@ -33,8 +33,8 @@ import threading
 import time
 from typing import Any, Callable
 
-# How many lines of a tool's output, and how many characters of a line, are
-# printed.
+# How many lines of a tool's output are printed, and how many characters go
+# on one console line before a line goes on over the next.
 TAIL_LINES = 15
 LINE_WIDTH = 160
 
@@ -70,9 +70,14 @@ _PR_SET_PDEATHSIG = 1
 _PR_SET_CHILD_SUBREAPER = 36
 
 
-def _shorten(text: str, width: int = LINE_WIDTH) -> str:
-    text = text.strip()
-    return text if len(text) <= width else text[: width - 1] + '…'
+def _wrap(prefix: str, text: str, continuation: str | None = None) -> list[str]:
+    """*text* after *prefix*, over as many console lines as it takes, the
+    later ones after *continuation* (*prefix* if not given)."""
+    chunks = [
+        text[i : i + LINE_WIDTH] for i in range(0, len(text), LINE_WIDTH)
+    ] or ['']
+    rest = prefix if continuation is None else continuation
+    return [prefix + chunks[0], *(rest + chunk for chunk in chunks[1:])]
 
 
 def _clean(line: str) -> str:
@@ -82,7 +87,7 @@ def _clean(line: str) -> str:
     last `\\r` is kept.
     """
     line = line.rsplit('\r', 1)[-1].rstrip()
-    return _shorten(_LOG_SOURCE_RE.sub('', line))
+    return _LOG_SOURCE_RE.sub('', line)
 
 
 def _tool_summary(name: str, tool_input: dict[str, Any]) -> list[str]:
@@ -92,11 +97,16 @@ def _tool_summary(name: str, tool_input: dict[str, Any]) -> list[str]:
     for key in _SUMMARY_KEYS:
         value = tool_input.get(key)
         if isinstance(value, str) and value.strip():
-            lines = [_shorten(f'▶ {name}: {value.splitlines()[0]}')]
+            first = value.strip().splitlines()[0]
+            lines = _wrap('▶ ', f'{name}: {first}', '  ')
             break
     command = tool_input.get('command')
     if isinstance(command, str) and tool_input.get('description'):
-        lines.append('  ' + _shorten(f'$ {command.strip().splitlines()[0]}'))
+        # In full, as what a command does is often in its later lines.
+        first, *rest = command.strip().splitlines()
+        lines += _wrap('  $ ', first, '    ')
+        for line in rest:
+            lines += _wrap('    ', line)
     return lines
 
 
@@ -170,10 +180,8 @@ def format_event(event: dict[str, Any]) -> list[str]:
             if block.get('type') != 'tool_result':
                 continue
             marker = '✘' if block.get('is_error') else '│'
-            lines += [
-                f'  {marker} {line}'
-                for line in _tail(_result_text(block.get('content')))
-            ]
+            for line in _tail(_result_text(block.get('content'))):
+                lines += _wrap(f'  {marker} ', line)
     elif kind == 'result':
         parts = [f'■ {subtype}']
         if event.get('duration_ms'):
@@ -231,7 +239,8 @@ class Follower:
                 lines.append(pending)
             for line in lines:
                 if cleaned := _clean(line):
-                    self._emit(f'  ┆ {cleaned}')
+                    for text in _wrap('  ┆ ', cleaned):
+                        self._emit(text)
             if done:
                 return
 
