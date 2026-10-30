@@ -83,6 +83,9 @@ def _latest_milestone(api: DEPS) -> int:
 def RunSteps(api: DEPS, properties: InputProperties) -> None:
     milestone = properties.milestone or _latest_milestone(api)
     api.brave_core_checkout.set_brave_core_ref(f'refs/heads/cr{milestone}')
+    # The `.env` for the builds, with RBE when the module's `use_remoteexec`
+    # property asks for it.
+    api.brave_core_checkout.set_config('brave')
     root = api.brave_core_checkout.ensure_checkout()
     # The run's logs and report start empty, so that the agent only reads its
     # own run's. Those of earlier runs are kept with the job that ran them.
@@ -184,6 +187,19 @@ def GenTests(api: TEST_DEPS):
         ),
         api.post_process(post_process.StatusSuccess),
         api.post_process(post_process.DropExpectation),
+    )
+
+    # Builds use RBE through the module's properties, as on brave_builder.
+    yield api.test(
+        'rbe',
+        api.brave_core_checkout.with_git_cache(),
+        api.brave_core_checkout.git_cache_populated(),
+        api.chromium_checkout.existing_checkout(),
+        api.brave_core_checkout.rbe(siso_cache_dir='/b/siso'),
+        api.properties(milestone=159),
+        api.post_process(post_process.MustRun, 'write .env'),
+        api.post_process(post_process.MustRun, 'autolift'),
+        api.post_process(post_process.StatusSuccess),
     )
 
     # No cr<N> branch to lift.
