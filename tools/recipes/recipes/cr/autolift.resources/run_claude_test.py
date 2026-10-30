@@ -72,10 +72,13 @@ class FormatEventTest(unittest.TestCase):
             [
                 'Rebase finished.',
                 'Checking.',
+                '',
                 '▶ Bash: Status',
                 _DIVIDER,
                 '  $ git status',
+                '',
                 '▶ Read: /a',
+                '',
                 '▶ TodoWrite',
             ],
         )
@@ -93,6 +96,7 @@ class FormatEventTest(unittest.TestCase):
         self.assertEqual(
             run_claude.format_event(event),
             [
+                '',
                 '▶ Bash: Check',
                 _DIVIDER,
                 f'  $ {"a" * width}',
@@ -105,7 +109,7 @@ class FormatEventTest(unittest.TestCase):
         event = _assistant(
             {'type': 'tool_use', 'name': 'Bash', 'input': {'command': 'ls'}}
         )
-        self.assertEqual(run_claude.format_event(event), ['▶ Bash: ls'])
+        self.assertEqual(run_claude.format_event(event), ['', '▶ Bash: ls'])
 
     def test_log_sources_are_stripped(self):
         text = '[12:02:25] * Changes for this bump        terminal.py:358   '

@@ -174,6 +174,8 @@ def format_event(event: dict[str, Any]) -> list[str]:
             if block.get('type') == 'text' and block.get('text', '').strip():
                 lines += block['text'].strip().splitlines()
             elif block.get('type') == 'tool_use':
+                # An empty line sets each call apart from what came before.
+                lines.append('')
                 lines += _tool_summary(
                     block.get('name', '?'), block.get('input') or {}
                 )
@@ -200,7 +202,7 @@ def format_event(event: dict[str, Any]) -> list[str]:
         # Not `result`, which repeats Claude's last message.
         lines.append(', '.join(parts))
 
-    return [f'{indent}{line}' for line in lines]
+    return [f'{indent}{line}' if line else '' for line in lines]
 
 
 def parse_line(line: str) -> dict[str, Any] | None:
