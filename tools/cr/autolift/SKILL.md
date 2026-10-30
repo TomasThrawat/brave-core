@@ -282,7 +282,7 @@ commit body and in the report. Then carry on. Examples from cr158:
 - `brave/build/config/siso/brave_siso_config.star` is hardlinked into
   `src/build/config/siso/`. Editing tools that write atomically break the link,
   and the build then reads a stale copy. After editing it, run
-  `python3 build/hardlink_file.py build/config/siso/brave_siso_config.star ../build/config/siso/brave_siso_config.star`
+  `vpython3 build/hardlink_file.py build/config/siso/brave_siso_config.star ../build/config/siso/brave_siso_config.star`
   and check that both paths have the same inode (`stat -c '%i %n'`).
 
 ## Tooling
@@ -547,18 +547,20 @@ After `--continue`:
 ### 3. Linux build
 
 ```sh
-pnpm run build --ignore_compile_failure --target=brave:all \
+pnpm run build --target=brave:all \
     --gn=enable_updater:true --gn=use_prebuilt_omaha4:false \
     > .autolift/cr<N>/build-linux.log 2>&1
 ```
 
 Use exactly this command; never raw `autoninja`, `ninja` or `siso`. The out dir
-is `../out/Component`. `--ignore_compile_failure` keeps going after errors, so
-one round shows many failures. Loop:
+is `../out/Component`. The build stops at the first failure, so each round fixes
+what failed and rebuilds; the build is incremental, so rounds are cheap. Don't
+add `--ignore_compile_failure`: a failure is cheaper to fix as soon as it shows,
+and later errors often only follow from it. Loop:
 
 1. `autolift.py build-summary .autolift/cr<N>/build-linux.log`.
-2. Group the errors by root cause, not by file. One header change can fail 60
-   objects.
+2. Steps running in parallel may fail together. Group their errors by root
+   cause, not by file: one header change can fail many objects.
 3. For each group, find the culprit and the fix (see
    [Fix patterns](#fix-patterns)). Independent groups can be researched in
    parallel, by subagents that only research. Edits and commits stay in the main
@@ -566,9 +568,8 @@ one round shows many failures. Loop:
 4. Commit each fix with its culprit, re-run `pnpm run format --base=HEAD` on
    Brave files, and rebuild.
 
-"cannot make progress due to previous N errors" with many steps remaining is
-normal: those steps depend on the failures. If a log ends with an error about
-`out/Component/build.guard`, two builds overlapped. Make sure only one runs.
+If a log ends with an error about `out/Component/build.guard`, two builds
+overlapped. Make sure only one runs.
 
 To check one fix quickly, build just the targets it touches with the same
 command and flags, e.g. `--target=brave_unit_tests`,
@@ -582,7 +583,7 @@ Once the build is green, run the tests that cover each fix, and add coverage
 where a runtime fix has none.
 
 ```sh
-python3 tools/recipes/runtest.py --build-dir ../out/Component --xvfb \
+vpython3 tools/recipes/runtest.py --build-dir ../out/Component --xvfb \
     <binary> --no-sandbox --gtest_filter='<Suite>.*'
 ```
 
@@ -653,11 +654,10 @@ with `gn gen --check`, which catches deps that a Linux-only `gn check` missed
 Android deps); when a lift changes GN deps, expect Android to need its own. Read
 the `gn gen` warnings too: "Build argument has no effect" on an arg Brave sets
 means upstream removed it, and the build stays green without it (cr159:
-`android_override_version_name`, so the APK lost Brave's version name). This
-command has no `--ignore_compile_failure`, so it stops at the first error:
-expect one round per failure. Re-run `pnpm run init --target_os=android` after
-changing `brave/DEPS`. It also checks that the new deps sync. All Android fixes
-get `--tagged=Android`.
+`android_override_version_name`, so the APK lost Brave's version name). Like the
+Linux build, it stops at the first failure. Re-run
+`pnpm run init --target_os=android` after changing `brave/DEPS`. It also checks
+that the new deps sync. All Android fixes get `--tagged=Android`.
 
 For tests, run only the Android tests for code touched by Android fixes.
 Robolectric tests run on the host, with `brave/script` on `PYTHONPATH`:
