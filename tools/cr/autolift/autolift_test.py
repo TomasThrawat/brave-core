@@ -5,6 +5,7 @@
 # You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from pathlib import Path
+import io
 import shutil
 import subprocess
 import tempfile
@@ -423,22 +424,30 @@ class LiftCommandTest(unittest.TestCase):
         directory = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, directory)
 
-        def run(_cmd, stdout, **_):
-            stdout.write(log_text.encode('utf-8'))
-            return mock.Mock(returncode=returncode)
-
+        process = mock.Mock(
+            stdout=io.BytesIO(log_text.encode('utf-8')),
+            wait=mock.Mock(return_value=returncode),
+        )
+        self.stdout = io.TextIOWrapper(io.BytesIO(), encoding='utf-8')
         brave = mock.MagicMock()
         brave.current_branch.return_value = 'cr158'
         with (
             mock.patch.object(autolift.repository, 'brave', brave),
             mock.patch.object(autolift, '_RUN_ROOT', directory),
             mock.patch.object(
-                autolift.subprocess, 'run', side_effect=run
+                autolift.subprocess, 'Popen', return_value=process
             ) as run_mock,
             mock.patch.object(autolift, '_package_range', return_value=None),
+            mock.patch.object(autolift.sys, 'stdout', self.stdout),
         ):
             result = autolift._cmd_lift(mock.Mock(continue_=True))
         return result, run_mock, directory / 'cr158' / 'report.md'
+
+    def test_brockit_output_is_also_printed(self):
+        self._lift('💥 Done!\n')
+        self.stdout.flush()
+        printed = self.stdout.buffer.getvalue().decode('utf-8')
+        self.assertTrue(printed.startswith('💥 Done!\n'))
 
     def test_exits_non_zero_when_brockit_exits_zero_with_work_left(self):
         result, run_mock, report = self._lift(_CONTINUE_LOG)

@@ -270,6 +270,22 @@ commit body and in the report. Then carry on. Examples from cr158:
   the changed lines of Brave files. Revert anything it reformats outside the
   change, such as unrelated tracker files.
 
+### Long commands
+
+- Run commands that take minutes in the background (the Bash tool's
+  `run_in_background`): `autolift.py lift` and `lift --continue`,
+  `pnpm run init`, the builds, the presubmit and long test runs. Then end the
+  turn: you are notified when the command finishes. Don't poll it, `sleep`, or
+  read its output file in the meantime. A CI run already follows that output on
+  its console, and every check is another paid turn.
+- Send a command's output to its log and to the console at once, as the commands
+  below do: `set -o pipefail; <command> 2>&1 | tee <log>`. `pipefail` keeps the
+  command's exit status. `autolift.py lift` keeps its own log, and prints
+  Brockit's output as it goes.
+- Once it finishes, read what you need from the log
+  (`autolift.py build-summary`, `grep`, `tail`), not the whole output: a build's
+  output doesn't fit in context. `autolift.py lift` prints its summary last.
+
 ### Machine state
 
 - Never delete caches, out directories or anything outside the repo working tree
@@ -547,9 +563,10 @@ After `--continue`:
 ### 3. Linux build
 
 ```sh
+set -o pipefail
 pnpm run build --target=brave:all \
     --gn=enable_updater:true --gn=use_prebuilt_omaha4:false \
-    > .autolift/cr<N>/build-linux.log 2>&1
+    2>&1 | tee .autolift/cr<N>/build-linux.log
 ```
 
 Use exactly this command; never raw `autoninja`, `ninja` or `siso`. The out dir
@@ -639,10 +656,11 @@ manglers.
 ### 6. Android
 
 ```sh
-pnpm run init --target_os=android
+set -o pipefail
+pnpm run init --target_os=android 2>&1 | tee .autolift/cr<N>/init-android.log
 pnpm run build Static --target_os=android --target_arch=x64 \
     --target=brave:all --gn=android_static_analysis:on \
-    > .autolift/cr<N>/build-android.log 2>&1
+    2>&1 | tee .autolift/cr<N>/build-android.log
 ```
 
 Use `x64`, so that tests can run on an emulator. `android_static_analysis=on`
@@ -680,8 +698,9 @@ Once the Linux and Android builds pass, run the presubmit against the branch's
 upstream (the base):
 
 ```sh
+set -o pipefail
 pnpm run presubmit --base "$(git rev-parse --abbrev-ref '@{upstream}')" \
-    > .autolift/cr<N>/presubmit.log 2>&1
+    2>&1 | tee .autolift/cr<N>/presubmit.log
 ```
 
 Address what it reports, errors above all: commit each fix by the usual rules
