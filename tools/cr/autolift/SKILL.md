@@ -320,7 +320,7 @@ vpython3 tools/cr/autolift/autolift.py lift --continue
 # Reset cr<N>, set its base as upstream, and start brockit rebase (step 1).
 vpython3 tools/cr/autolift/autolift.py prepare 158
 
-# New milestone only, at the very end: push it and open its PR (step 10).
+# New milestone only, at the very end: push it and open its PR (step 11).
 vpython3 tools/cr/autolift/autolift.py publish 159
 
 # Outcome, failed steps and distinct errors of a build log.
@@ -362,7 +362,7 @@ For a new milestone, with no `origin/cr<N>` yet, it creates `cr<N>` from the
 base (for 159: from `origin/cr158`), sets the same upstream, and skips the
 rebase, since the branch has nothing of its own yet. Go straight to
 [step 2](#2-lift): `--to=@latest-for-branch` takes the major from the branch
-name. The new branch stays local until [step 10](#10-publish-a-new-milestone).
+name. The new branch stays local until [step 11](#11-publish-a-new-milestone).
 
 The base is `origin/master` once master's Chromium version is on milestone
 `N-1`, which is when the previous milestone has landed, and `origin/cr<N-1>`
@@ -674,17 +674,33 @@ such as `BytecodeTest`, need an emulator: `tools/android/avd/avd.py install` and
 several GB and needs `/dev/kvm`. If no device can be had, list the Android tests
 as unverified in the report.
 
-### 7. Code health review
+### 7. Presubmit
 
-Once the Linux and Android builds pass, run `tools/cr/codehealth_review.md` over
-the run's whole range, `<old tag>..<new tag>` (cr159:
-`158.0.8127.2..159.0.8131.1`). It writes or updates
-`tools/cr/M<N>_codehealth.md` with what fails silently: overrides that stopped
-applying, re-enabled features, Brave copies that missed upstream fixes. For a
-branch that isn't on origin yet, "what the rebase already fixed" is
-`<base>..cr<N>` locally, not `origin/master..origin/cr<N>`. Follow its own
-instructions (subagents, static verification only), and commit the tracker with
-any change to `codehealth_review.md` as `Version CodeHealth tracker`.
+Once the Linux and Android builds pass, run the presubmit against the branch's
+upstream (the base):
+
+```sh
+pnpm run presubmit --base "$(git rev-parse --abbrev-ref '@{upstream}')" \
+    > .autolift/cr<N>/presubmit.log 2>&1
+```
+
+Address what it reports, errors above all: commit each fix by the usual rules
+(with its culprit when upstream caused it), rebuild the targets a fix touches,
+and run the presubmit again until no errors are left. Address warnings too when
+they point at a real problem. Some warnings aren't worth addressing, or are
+outdated: the one about empty lines in patches no longer matters, as plaster
+generates those patches. List each warning left alone, and why, in the report.
+
+### 8. Code health review
+
+Once the presubmit is addressed, run `tools/cr/codehealth_review.md` over the
+run's whole range, `<old tag>..<new tag>` (cr159: `158.0.8127.2..159.0.8131.1`).
+It writes or updates `tools/cr/M<N>_codehealth.md` with what fails silently:
+overrides that stopped applying, re-enabled features, Brave copies that missed
+upstream fixes. For a branch that isn't on origin yet, "what the rebase already
+fixed" is `<base>..cr<N>` locally, not `origin/master..origin/cr<N>`. Follow its
+own instructions (subagents, static verification only), and commit the tracker
+with any change to `codehealth_review.md` as `Version CodeHealth tracker`.
 
 The review is finished only when every subagent it started has come back with
 its final result. A completion notice that says the agent still has background
@@ -702,12 +718,12 @@ they're picked up, so list them in the report and carry on. It is the last step
 before the run stops, or before a new milestone is published: don't publish
 without it.
 
-### 8. Update this document
+### 9. Update this document
 
 Before finishing, fold what the run taught into this file, following
 [Maintaining this document](#maintaining-this-document), and commit it.
 
-### 9. Wrap up
+### 10. Wrap up
 
 - `autolift.py verify-culprits <base> <branch range>` reports no problems.
 - `git status` is clean. Untracked files are scratch you created, or deps
@@ -715,12 +731,12 @@ Before finishing, fold what the run taught into this file, following
 - No build is left running.
 - Print the report.
 
-### 10. Publish a new milestone
+### 11. Publish a new milestone
 
 Only when `prepare` created the branch in step 1, because `origin/cr<N>` didn't
 exist, and only once the whole run is done: the lift finished, the Linux and
-Android builds pass, the code health review is complete (every review subagent
-back) and committed, and wrap-up is clean. Then:
+Android builds pass, the presubmit reports no errors, the code health review is
+complete (every review subagent back) and committed, and wrap-up is clean. Then:
 
 ```sh
 vpython3 tools/cr/autolift/autolift.py publish <N>
@@ -913,6 +929,7 @@ you couldn't verify), and print it at the end. Include:
 - Each `--tagged=WIP` commit: the concern and the alternatives.
 - Issues found but left alone because the codehealth tracker covers them, and
   any test failures attributed to the environment or to flakiness.
+- Presubmit warnings left alone, and why.
 - Tooling TODOs filed or extended in `M<N>_codehealth.md`.
 - Tool bugs fixed during the run, with their commits.
 - What wasn't verified: platforms not built (iOS, Windows, macOS), tests that
