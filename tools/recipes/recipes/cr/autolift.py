@@ -18,6 +18,7 @@ from recipe_modules import (
     chromium_checkout,
     context,
     depot_tools,
+    file,
     git,
     path,
     raw_io,
@@ -44,6 +45,7 @@ class DEPS(RecipeScriptApi):
     brave_core_checkout: brave_core_checkout.API
     context: context.API
     depot_tools: depot_tools.API
+    file: file.API
     git: git.API
     path: path.API
     raw_io: raw_io.API
@@ -108,6 +110,10 @@ def RunSteps(api: DEPS, properties: InputProperties) -> None:
     api.brave_core_checkout.set_brave_core_ref(f'refs/heads/cr{milestone}')
     root = api.brave_core_checkout.ensure_checkout()
     _reset_branch(api, root, f'cr{milestone}')
+    # The run's logs and report start empty, so that the agent only reads its
+    # own run's. Those of earlier runs are kept with the job that ran them.
+    run_dir = root / '.autolift' / f'cr{milestone}'
+    api.file.rmtree('clear earlier run', run_dir)
     with (
         api.brave_core_checkout.brave_core_layout(),
         api.context(cwd=root),
@@ -119,7 +125,7 @@ def RunSteps(api: DEPS, properties: InputProperties) -> None:
                 api.depot_tools.vpython3(),
                 api.resource('run_claude.py'),
                 '--log',
-                root / '.autolift' / f'cr{milestone}' / 'claude.jsonl',
+                run_dir / 'claude.jsonl',
                 '--',
                 'claude',
                 '--print',
