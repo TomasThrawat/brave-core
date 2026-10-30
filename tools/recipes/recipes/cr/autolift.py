@@ -92,7 +92,8 @@ def RunSteps(api: DEPS, properties: InputProperties) -> None:
         api.brave_core_checkout.brave_core_layout(),
         api.context(cwd=root),
     ):
-        # The console gets a digest of Claude's stream, and the log all of it.
+        # The console gets a digest of Claude's stream and the run's logs as
+        # they are written; `claude.jsonl` keeps all of the stream.
         api.step(
             'autolift',
             [
@@ -100,6 +101,8 @@ def RunSteps(api: DEPS, properties: InputProperties) -> None:
                 api.resource('run_claude.py'),
                 '--log',
                 run_dir / 'claude.jsonl',
+                '--logs',
+                run_dir,
                 '--',
                 'claude',
                 '--print',
@@ -120,6 +123,8 @@ def _autolift_cmd(milestone: int) -> list[str]:
         r'RECIPE\[cr/autolift\]\.resources/run_claude\.py',
         '--log',
         rf'.*/b/src/brave/\.autolift/cr{milestone}/claude\.jsonl',
+        '--logs',
+        rf'.*/b/src/brave/\.autolift/cr{milestone}',
         '--',
         'claude',
         '--print',

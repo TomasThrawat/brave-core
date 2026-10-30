@@ -189,6 +189,8 @@
       "RECIPE[cr/autolift].resources/run_claude.py",
       "--log",
       "[WORKSPACE]/b/src/brave/.autolift/cr159/claude.jsonl",
+      "--logs",
+      "[WORKSPACE]/b/src/brave/.autolift/cr159",
       "--",
       "claude",
       "--print",

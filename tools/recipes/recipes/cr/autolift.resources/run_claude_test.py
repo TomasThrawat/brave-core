@@ -227,6 +227,21 @@ class BackgroundTest(unittest.TestCase):
         digest.close()
         self.assertEqual(printed[-1], '  ┆ still building')
 
+    def test_logs_are_followed(self):
+        logs = Path(self._tmp.name) / 'cr159'
+        printed = []
+        digest = run_claude.Digest(printed.append, logs)
+        logs.mkdir()
+        (logs / 'claude.jsonl').write_text('{}\n', encoding='utf-8')
+        (logs / 'build-linux.log').write_text(
+            '[1/2] CXX a.o\nFAILED: a.o\n', encoding='utf-8'
+        )
+        digest.close()
+        self.assertEqual(
+            printed,
+            ['  ┆ ▸ build-linux.log', '  ┆ [1/2] CXX a.o', '  ┆ FAILED: a.o'],
+        )
+
     def test_missing_output_file_prints_nothing(self):
         printed = []
         digest = run_claude.Digest(printed.append)

@@ -8,9 +8,12 @@
 The raw stream is kept in full in the `--log` file; the console gets Claude's
 messages, one line per tool call, the tail of each tool's output, and the
 final result. The output of commands Claude runs in the background is followed
-live, until Claude is notified that they finished:
+live, until Claude is notified that they finished, and so are the `*.log`
+files of the `--logs` directory, which commands write to instead of Claude's
+context:
 
-    run_claude.py --log .autolift/cr159/claude.jsonl -- claude --print ...
+    run_claude.py --log .autolift/cr159/claude.jsonl --logs .autolift/cr159 \
+        -- claude --print ...
 """
 
 from __future__ import annotations
@@ -195,7 +198,7 @@ def parse_line(line: str) -> dict[str, Any] | None:
 
 
 class Follower:
-    """Prints the lines a background command writes to its output file."""
+    """Prints the lines written to a file, as they are written."""
 
     def __init__(self, path: Path, emit: Callable[[str], None]) -> None:
         self._path = path
@@ -233,13 +236,51 @@ class Follower:
                 return
 
 
-class Digest:
-    """Prints the digest of the stream, following background commands."""
+class LogsFollower:
+    """Prints the `*.log` files of a directory as they are written, each
+    under a line naming it."""
 
-    def __init__(self, emit: Callable[[str], None]) -> None:
+    def __init__(self, directory: Path, emit: Callable[[str], None]) -> None:
+        self._directory = directory
+        self._emit = emit
+        self._followers: list[Follower] = []
+        self._done = threading.Event()
+        self._thread = threading.Thread(target=self._watch, daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Prints what is left of the logs, and stops following them."""
+        self._done.set()
+        self._thread.join()
+        for follower in self._followers:
+            follower.stop()
+
+    def _watch(self) -> None:
+        seen: set[Path] = set()
+        while True:
+            # Look once more after `stop`, for a log that just appeared.
+            done = self._done.wait(POLL_INTERVAL)
+            # The directory may not exist yet.
+            for path in sorted(self._directory.glob('*.log')):
+                if path not in seen:
+                    seen.add(path)
+                    self._emit(f'  ┆ ▸ {path.name}')
+                    self._followers.append(Follower(path, self._emit))
+            if done:
+                return
+
+
+class Digest:
+    """Prints the digest of the stream, following background commands, and
+    the logs in *logs_dir*, if given."""
+
+    def __init__(
+        self, emit: Callable[[str], None], logs_dir: Path | None = None
+    ) -> None:
         self._lock = threading.Lock()
         self._print = emit
         self._followers: dict[str, Follower] = {}
+        self._logs = LogsFollower(logs_dir, self.emit) if logs_dir else None
         self.failed = False
 
     def emit(self, text: str) -> None:
@@ -269,6 +310,9 @@ class Digest:
         for follower in self._followers.values():
             follower.stop()
         self._followers.clear()
+        if self._logs is not None:
+            self._logs.stop()
+            self._logs = None
 
 
 def _prctl(option: int, value: int) -> None:
@@ -328,7 +372,7 @@ def _exit_on_signal(signum: int, _frame: Any) -> None:
     raise SystemExit(128 + signum)
 
 
-def run(cmd: list[str], log: Path) -> int:
+def run(cmd: list[str], log: Path, logs_dir: Path | None = None) -> int:
     """Runs *cmd*, logging its stream to *log* and printing the digest.
 
     Whatever *cmd* leaves running when it exits, or when this is stopped, is
@@ -338,7 +382,7 @@ def run(cmd: list[str], log: Path) -> int:
     while exiting 0.
     """
     log.parent.mkdir(parents=True, exist_ok=True)
-    digest = Digest(lambda text: print(text, flush=True))
+    digest = Digest(lambda text: print(text, flush=True), logs_dir)
 
     def pump(stream, log_file) -> None:
         for line in stream:
@@ -372,6 +416,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         '--log', type=Path, required=True, help='Where to keep the raw stream.'
     )
+    parser.add_argument(
+        '--logs', type=Path, help='A directory whose `*.log` files to follow.'
+    )
     parser.add_argument('cmd', nargs='+', help='The claude command, after --.')
     args = parser.parse_args(argv)
 
@@ -388,7 +435,7 @@ def main(argv: list[str] | None = None) -> int:
     if os.getppid() != engine:
         # The engine was gone before the death signal was armed.
         return 1
-    return run(args.cmd, args.log)
+    return run(args.cmd, args.log, args.logs)
 
 
 if __name__ == '__main__':
