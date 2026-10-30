@@ -172,6 +172,9 @@
       "--verbose"
     ],
     "cwd": "[WORKSPACE]/b/src/brave",
+    "env": {
+      "CHROME_HEADLESS": "1"
+    },
     "env_prefixes": {
       "PATH": [
         "[WORKSPACE]/b/src/brave/tools/cr/bootstrap"

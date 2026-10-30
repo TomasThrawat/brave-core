@@ -133,17 +133,23 @@ class BraveCoreCheckoutApi(RecipeApi):
         logging.info('Writing %s:\n%s', self._root / '.env', text)
         self.m.file.write_text('write .env', self._root / '.env', text)
 
-    def _with_brave_core_layout(fn):
-        """A decorator for functions that run in the brave-core layout: its
-        `bootstrap` dir on $PATH, and the Chromium environment.
+    @contextlib.contextmanager
+    def brave_core_layout(self):
+        """Run the steps in the block in the brave-core layout: its `bootstrap`
+        dir on $PATH, and the Chromium environment.
         """
+        with (
+            self._bootstrap_layout(),
+            self.m.chromium_checkout.chromium_layout(),
+        ):
+            yield
+
+    def _with_brave_core_layout(fn):
+        """A decorator for functions that run in the `brave_core_layout`."""
 
         @functools.wraps(fn)
         def inner(self, *args, **kwargs):
-            with (
-                self._bootstrap_layout(),
-                self.m.chromium_checkout.chromium_layout(),
-            ):
+            with self.brave_core_layout():
                 return fn(self, *args, **kwargs)
 
         return inner

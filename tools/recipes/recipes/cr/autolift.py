@@ -80,9 +80,9 @@ def RunSteps(api: DEPS, properties: InputProperties) -> None:
     milestone = properties.milestone or _latest_milestone(api)
     api.brave_core_checkout.set_brave_core_ref(f'refs/heads/cr{milestone}')
     root = api.brave_core_checkout.ensure_checkout()
-    with api.context(
-        cwd=root,
-        env_prefixes={'PATH': [root / 'tools' / 'cr' / 'bootstrap']},
+    with (
+        api.brave_core_checkout.brave_core_layout(),
+        api.context(cwd=root),
     ):
         api.step(
             'autolift',
