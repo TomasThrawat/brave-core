@@ -13,6 +13,9 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.VisibleForTesting;
 import androidx.core.graphics.Insets;
@@ -30,7 +33,6 @@ import org.chromium.chrome.R;
 import org.chromium.chrome.browser.ChromeTabbedActivity;
 import org.chromium.chrome.browser.ui.edge_to_edge.EdgeToEdgeUtils;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
-import org.chromium.components.browser_ui.styles.SemanticColorUtils;
 import org.chromium.ui.edge_to_edge.EdgeToEdgeSystemBarColorHelper;
 import org.chromium.ui.util.ColorUtils;
 
@@ -99,7 +101,8 @@ public class BraveSettingsActivity extends SettingsActivity {
 
         View contentView = getContentView();
         mContentView = contentView;
-        contentView.setBackgroundColor(SemanticColorUtils.getSettingsBackgroundColor(this));
+        contentView.setBackgroundColor(Color.BLACK);
+        applyMinimalBlackSettingsStyle(contentView);
         getSnackbarManager()
                 .pushParentViewOverride(
                         SnackbarManager.ParentOverrideSlot.ONE_OFF,
@@ -170,6 +173,7 @@ public class BraveSettingsActivity extends SettingsActivity {
         mOriginalContentBottomPaddings.putIfAbsent(insetView, insetView.getPaddingBottom());
         if (insetView instanceof RecyclerView recyclerView) {
             recyclerView.setClipToPadding(false);
+            applyMinimalBlackSettingsStyle(recyclerView);
         }
 
         View contentView = mContentView;
@@ -222,6 +226,55 @@ public class BraveSettingsActivity extends SettingsActivity {
                                 - imeBottomInset);
         for (Map.Entry<View, Integer> entry : originalBottomPaddings.entrySet()) {
             setBottomPadding(entry.getKey(), entry.getValue() + navigationBarBottomInset);
+        }
+    }
+
+    private static void applyMinimalBlackSettingsStyle(View view) {
+        if (view instanceof RecyclerView recyclerView) {
+            recyclerView.setBackgroundColor(Color.BLACK);
+            recyclerView.addOnChildAttachStateChangeListener(
+                    new RecyclerView.OnChildAttachStateChangeListener() {
+                        @Override
+                        public void onChildViewAttachedToWindow(View child) {
+                            styleMinimalBlackSettingsRow(child);
+                        }
+
+                        @Override
+                        public void onChildViewDetachedFromWindow(View child) {}
+                    });
+            for (int i = 0; i < recyclerView.getChildCount(); i++) {
+                styleMinimalBlackSettingsRow(recyclerView.getChildAt(i));
+            }
+            return;
+        }
+        if (view instanceof ViewGroup group) {
+            // Keep non-list Settings containers black. RecyclerView rows are styled separately
+            // so their original selector/ripple drawables remain intact.
+            group.setBackgroundColor(Color.BLACK);
+            for (int i = 0; i < group.getChildCount(); i++) {
+                applyMinimalBlackSettingsStyle(group.getChildAt(i));
+            }
+        }
+    }
+
+    private static void styleMinimalBlackSettingsRow(View row) {
+        // Preserve each preference's native selectable/ripple background.
+        styleMinimalBlackSettingsDescendants(row);
+    }
+
+    private static void styleMinimalBlackSettingsDescendants(View view) {
+        if (view instanceof TextView textView) {
+            textView.setTextColor(
+                    textView.getId() == android.R.id.summary
+                            ? Color.rgb(154, 154, 154)
+                            : Color.WHITE);
+        } else if (view instanceof ImageView imageView) {
+            imageView.setColorFilter(Color.WHITE);
+        }
+        if (view instanceof ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                styleMinimalBlackSettingsDescendants(group.getChildAt(i));
+            }
         }
     }
 

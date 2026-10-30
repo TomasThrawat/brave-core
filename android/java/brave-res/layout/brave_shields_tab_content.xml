@@ -57,7 +57,7 @@
                     android:id="@+id/site_text_unified"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface"
+                    android:textColor="#FFFFFF"
                     android:textSize="20sp"
                     android:lineHeight="26sp"
                     android:fontFamily="sans-serif-medium"
@@ -70,7 +70,7 @@
                     style="@style/LargeRegular"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface"
+                    android:textColor="#FFFFFF"
                     android:maxLines="1"
                     android:ellipsize="end"
                     tools:text="Shields up for this site"/>
@@ -166,7 +166,7 @@
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
             android:text="@string/report_broken_site_prompt"
-            android:textColor="?attr/colorOnSurface"/>
+            android:textColor="#FFFFFF"/>
 
         <TextView
             android:id="@+id/report_broken_site_button"
@@ -263,7 +263,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/https_upgrade_title"
-                    android:textColor="?attr/colorOnSurface"/>
+                    android:textColor="#FFFFFF"/>
 
                 <ImageView
                     android:layout_width="24dp"
@@ -294,7 +294,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/brave_shields_blocks_scripts_switch"
-                    android:textColor="?attr/colorOnSurface"/>
+                    android:textColor="#FFFFFF"/>
 
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/scripts_toggle"
@@ -329,7 +329,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/shred_site_data"
-                    android:textColor="?attr/colorOnSurface"/>
+                    android:textColor="#FFFFFF"/>
 
                 <ImageView
                     android:layout_width="24dp"
@@ -364,7 +364,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/block_trackers_ads_title"
-                    android:textColor="?attr/colorOnSurface"/>
+                    android:textColor="#FFFFFF"/>
 
                 <ImageView
                     android:layout_width="24dp"
@@ -399,7 +399,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/block_cookies"
-                    android:textColor="?attr/colorOnSurface"/>
+                    android:textColor="#FFFFFF"/>
 
                 <ImageView
                     android:layout_width="24dp"
@@ -429,7 +429,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/block_fingerprinting"
-                    android:textColor="?attr/colorOnSurface"/>
+                    android:textColor="#FFFFFF"/>
 
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/fingerprinting_toggle"
@@ -464,7 +464,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/brave_shields_block_element_text"
-                    android:textColor="?attr/colorOnSurface"/>
+                    android:textColor="#FFFFFF"/>
 
                 <ImageView
                     android:layout_width="24dp"

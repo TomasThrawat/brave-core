@@ -58,7 +58,8 @@
       android:layout_width="45dp"
       android:orientation="vertical"
       android:background="@drawable/modern_toolbar_background_grey_end_segment"
-      android:layout_height="match_parent" >
+      android:layout_height="match_parent"
+      android:visibility="gone" >
 
       <ImageButton android:id="@+id/brave_shields_button"
           style="@style/ToolbarButton"

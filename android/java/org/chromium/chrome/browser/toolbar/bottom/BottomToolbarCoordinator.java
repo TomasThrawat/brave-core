@@ -183,6 +183,7 @@ class BottomToolbarCoordinator implements View.OnLongClickListener {
                     closeAllTabsAction.run();
                 };
 
+        mBrowsingModeCoordinator.setTopToolbarRoot(topToolbarRoot);
         mBrowsingModeCoordinator.initializeWithNative(
                 newTabClickListener,
                 tabSwitcherListener,
@@ -228,15 +229,10 @@ class BottomToolbarCoordinator implements View.OnLongClickListener {
                                         .getBookmarkButton()
                                         .setVisibility(View.INVISIBLE);
                             }
-                            if (BottomToolbarVariationManager.isTabSwitcherOnBottomControls()) {
-                                browsingModeCoordinator
-                                        .getTabSwitcherButtonView()
-                                        .setVisibility(View.INVISIBLE);
-                            }
+                            browsingModeCoordinator.getTabSwitcherButtonView().setVisibility(View.INVISIBLE);
                             if (BottomToolbarVariationManager.isNewTabButtonOnBottomControls()) {
-                                browsingModeCoordinator
-                                        .getNewTabButtonParent()
-                                        .setVisibility(View.VISIBLE);
+                                browsingModeCoordinator.getNewTabButtonParent().setVisibility(View.VISIBLE);
+                                browsingModeCoordinator.getNewTabButton().setVisibility(View.VISIBLE);
                             }
 
                             mBottomContainerTopShadow.setVisibility(View.GONE);
@@ -248,26 +244,12 @@ class BottomToolbarCoordinator implements View.OnLongClickListener {
                             mIsInTabSwitcherMode = false;
                             BrowsingModeBottomToolbarCoordinator browsingModeCoordinator =
                                     (BrowsingModeBottomToolbarCoordinator) mBrowsingModeCoordinator;
-                            browsingModeCoordinator
-                                    .getSearchAccelerator()
-                                    .setVisibility(View.VISIBLE);
-                            if (BottomToolbarVariationManager.isHomeButtonOnBottomControls()) {
-                                browsingModeCoordinator.getHomeButton().setVisibility(View.VISIBLE);
-                            }
-                            if (BottomToolbarVariationManager.isBookmarkButtonOnBottomControls()) {
-                                browsingModeCoordinator
-                                        .getBookmarkButton()
-                                        .setVisibility(View.VISIBLE);
-                            }
-                            if (BottomToolbarVariationManager.isTabSwitcherOnBottomControls()) {
-                                browsingModeCoordinator
-                                        .getTabSwitcherButtonView()
-                                        .setVisibility(View.VISIBLE);
-                            }
+                            // Search is provided by the lower New Tab Page field, not the toolbar.
+                            browsingModeCoordinator.getSearchAccelerator().setVisibility(View.GONE);
+                            browsingModeCoordinator.getTabSwitcherButtonView().setVisibility(View.VISIBLE);
                             if (BottomToolbarVariationManager.isNewTabButtonOnBottomControls()) {
-                                browsingModeCoordinator
-                                        .getNewTabButtonParent()
-                                        .setVisibility(View.GONE);
+                                browsingModeCoordinator.getNewTabButton().setVisibility(View.GONE);
+                                browsingModeCoordinator.getNewTabButtonParent().setVisibility(View.GONE);
                             }
 
                             mBottomContainerTopShadow.setVisibility(View.VISIBLE);

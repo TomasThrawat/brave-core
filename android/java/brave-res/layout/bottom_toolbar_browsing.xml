@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright 2018 The Chromium Authors. All rights reserved.
-     Use of this source code is governed by a BSD-style license that can be
-     found in the LICENSE file. -->
-
-
+<!-- Copyright (c) 2020 The Brave Authors. All rights reserved.
+     This Source Code Form is subject to the terms of the Mozilla Public
+     License, v. 2.0. If a copy of the MPL was not distributed with this file,
+     You can obtain one at https://mozilla.org/MPL/2.0/. -->
 <org.chromium.chrome.browser.toolbar.bottom.BrowsingModeBottomToolbarLinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -11,47 +10,80 @@
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/default_bg_color_baseline"
+    android:background="#000000"
+    android:gravity="center_vertical"
     android:layout_gravity="top|center_horizontal"
-    android:paddingStart="@dimen/bottom_toolbar_padding"
-    android:paddingEnd="@dimen/bottom_toolbar_padding" >
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp">
 
+    <!-- Retain native views required by Chromium coordinators, but keep them out of the minimal UI. -->
     <org.chromium.chrome.browser.toolbar.BraveHomeButton
         android:id="@+id/bottom_home_button"
-        app:tint="@color/default_icon_color_tint_list"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/accessibility_toolbar_btn_home"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:visibility="gone"
+        app:tint="#FFFFFF"
+        android:contentDescription="@string/accessibility_toolbar_btn_home"
         style="@style/SplitToolbarButton" />
 
-    <include layout="@layout/toolbar_space" />
-    <include layout="@layout/brave_bookmark_toolbar" />
-    <include layout="@layout/toolbar_space" />
+    <include
+        layout="@layout/brave_bookmark_toolbar"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
 
     <org.chromium.chrome.browser.toolbar.bottom.SearchAccelerator
         android:id="@+id/search_accelerator"
-        android:layout_width="@dimen/search_accelerator_width"
-        android:layout_height="@dimen/search_accelerator_height"
-        android:layout_gravity="center"
-        android:layout_marginStart="@dimen/search_accelerator_width_margin"
-        android:layout_marginEnd="@dimen/search_accelerator_width_margin"
-        android:paddingTop="@dimen/search_accelerator_height_padding"
-        android:paddingBottom="@dimen/search_accelerator_height_padding"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
         android:contentDescription="@string/accessibility_toolbar_btn_search_accelerator"
-        app:srcCompat="@drawable/ic_search_21dp"/>
+        app:srcCompat="@drawable/ic_search_21dp" />
+
     <include layout="@layout/brave_bottom_new_tab_button" />
 
-    <include layout="@layout/toolbar_space" />
+    <ImageButton
+        android:id="@+id/bottom_downloads_button"
+        style="@style/SplitToolbarButton"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"
+        android:src="@drawable/ic_download"
+        android:scaleType="center"
+        android:contentDescription="@string/menu_downloads"
+        app:tint="#FFFFFF" />
 
     <org.chromium.chrome.browser.toolbar.TabSwitcherButtonView
         android:id="@+id/bottom_tab_switcher_button"
         style="@style/SplitToolbarButton"
-        app:menuMaxWidth="@dimen/tab_switcher_menu_width"
-        android:visibility="gone"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:visibility="visible"
         android:background="?attr/selectableItemBackgroundBorderless"
+        app:tint="#FFFFFF"
+        app:menuMaxWidth="@dimen/tab_switcher_menu_width"
         app:menuVerticalOverlapAnchor="false" />
 
-    <include layout="@layout/toolbar_space" />
+    <ImageButton
+        android:id="@+id/bottom_shields_button"
+        style="@style/SplitToolbarButton"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"
+        android:src="@drawable/ic_shield_done_filled"
+        android:scaleType="center"
+        android:contentDescription="@string/accessibility_toolbar_btn_brave_shields"
+        app:tint="#FFFFFF" />
 
-    <include layout="@layout/bottom_toolbar_menu_button" style="@style/SplitToolbarButton" />
+    <include
+        layout="@layout/bottom_toolbar_menu_button"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1" />
+
 </org.chromium.chrome.browser.toolbar.bottom.BrowsingModeBottomToolbarLinearLayout>

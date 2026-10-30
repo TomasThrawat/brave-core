@@ -21,7 +21,7 @@
         android:importantForAccessibility="no"
         android:layout_gravity="center"
         android:background="?attr/selectableItemBackgroundBorderless"
-        app:tint="@color/default_icon_color_tint_list" />
+        app:tint="#FFFFFF" />
 
     <ImageView
         android:id="@+id/menu_badge"
@@ -31,7 +31,7 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:importantForAccessibility="no"
         android:layout_gravity="center"
-        android:visibility="invisible" />
+        android:visibility="gone" />
 
 </org.chromium.chrome.browser.toolbar.menu_button.MenuButton>
 

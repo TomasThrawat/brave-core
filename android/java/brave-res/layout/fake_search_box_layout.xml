@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2018 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+<org.chromium.chrome.browser.ntp.search.BraveMinimalSearchBoxContainerView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/search_box"
+    android:layout_width="match_parent"
+    android:layout_height="54dp"
+    android:padding="0dp">
+    <LinearLayout
+        android:id="@+id/search_box_shadow_container"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:background="@drawable/brave_minimal_search_box_background"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+        <ImageView
+            android:id="@+id/brave_minimal_search_lock"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="12dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_brave_minimal_lock" />
+        <ImageView
+            style="@style/LocationBarActionButtonForFakeSearchBox"
+            android:id="@+id/search_box_engine_icon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:visibility="gone"
+            android:importantForAccessibility="no" />
+        <ImageView
+            style="@style/LocationBarActionButtonForFakeSearchBox"
+            android:id="@+id/search_box_plus_button"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:visibility="gone"
+            android:contentDescription="@string/accessibility_omnibox_open_context_popup"
+            android:src="@drawable/ic_add_24dp" />
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center_vertical">
+            <EditText
+                style="@style/TextAppearance.FakeSearchBoxText"
+                android:id="@+id/search_box_text"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:textAlignment="viewStart"
+                android:background="@null"
+                android:ellipsize="end"
+                android:focusableInTouchMode="false"
+                android:inputType="text"
+                android:singleLine="true"
+                android:hint="Search or enter address"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#9A9A9A"
+                android:textSize="13sp"
+                tools:ignore="Autofill,LabelFor" />
+        </RelativeLayout>
+        <ImageView
+            style="@style/LocationBarActionButtonForFakeSearchBox"
+            android:id="@+id/voice_search_button"
+            android:visibility="gone"
+            android:contentDescription="@string/accessibility_toolbar_btn_mic"
+            android:src="@drawable/ic_mic_white_24dp" />
+        <ImageView
+            style="@style/LocationBarActionButtonForFakeSearchBox"
+            android:id="@+id/lens_camera_button"
+            android:visibility="gone"
+            android:contentDescription="@string/accessibility_btn_lens_camera"
+            android:src="@drawable/lens_camera_icon" />
+        <org.chromium.components.browser_ui.widget.chips.ChipView
+            style="@style/AiModeChip"
+            android:id="@+id/search_box_ai_chip"
+            android:visibility="gone"
+            app:verticalInset="@dimen/ai_chip_vertical_inset"
+            app:horizontalInset="@dimen/ai_chip_horizontal_inset" />
+    </LinearLayout>
+</org.chromium.chrome.browser.ntp.search.BraveMinimalSearchBoxContainerView>

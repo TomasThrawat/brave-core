@@ -13,6 +13,7 @@
     android:layout_gravity="center_horizontal"
     android:orientation="vertical"
     android:gravity="center"
+    android:background="#000000"
     android:paddingTop="@dimen/toolbar_height_no_shadow"
     android:visibility="gone" >
 
@@ -20,7 +21,8 @@
         android:id="@+id/bg_image_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:contentDescription="@null"/>
+        android:contentDescription="@null"
+        android:visibility="gone"/>
 
     <FrameLayout
         android:id="@+id/bg_sponsored_rich_media_view"
@@ -34,7 +36,8 @@
         android:id="@+id/logo_view_stub"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout="@layout/logo_view_layout" />
+        android:layout="@layout/logo_view_layout"
+        android:visibility="gone" />
 
     <!-- On rebase move `Search box` ViewStub inside of `id/ntp_main_layout` -->
 
@@ -42,7 +45,8 @@
         android:id="@+id/recyclerview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:overScrollMode="never" />
+        android:overScrollMode="never"
+        android:visibility="gone" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -95,13 +99,8 @@
         android:layout_height="match_parent"
         android:layout_gravity="center_horizontal"
         android:orientation="vertical"
-        android:visibility="gone">
-
-            <!-- Search box -->
-            <ViewStub
-                android:id="@+id/search_box_stub"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+        android:background="#000000"
+        android:visibility="visible">
 
             <ViewStub
                 android:id="@+id/composeplate_view_stub"
@@ -125,7 +124,7 @@
                 android:id="@+id/signin_promo_view_container_stub"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout="@layout/signin_promo_view_new_tab_page" />
+                android:layout="@layout/signin_promo_view_new_tab_page" android:visibility="gone" />
 
             <ViewStub
                 android:id="@+id/home_modules_recycler_view_stub"
@@ -139,7 +138,7 @@
                 android:id="@+id/tab_switcher_module_container_stub"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout="@layout/tab_switcher_module_container" />
+                android:layout="@layout/tab_switcher_module_container" android:visibility="gone" />
 
             <ViewStub
                 android:id="@+id/mv_tiles_layout_stub"
@@ -149,7 +148,22 @@
                 android:layout_marginTop="@dimen/mvt_container_top_margin"
                 android:layout_marginLeft="@dimen/mvt_container_lateral_margin"
                 android:layout_marginRight="@dimen/mvt_container_lateral_margin"
-                android:layout="@layout/mv_tiles_layout" />
+                android:layout="@layout/mv_tiles_layout" android:visibility="gone" />
+
+            <!-- The actual Chromium search box is positioned at the bottom to match Penpot. -->
+            <View
+                android:id="@+id/ntp_minimal_home_spacer"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <ViewStub
+                android:id="@+id/search_box_stub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="138dp" />
 
             <!-- Combined row for Composeplate (AI Mode) and Most Visited Tiles. -->
             <ViewStub
