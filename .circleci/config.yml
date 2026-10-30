@@ -6,9 +6,20 @@ jobs:
       image: ubuntu-2404:current
     resource_class: large
     working_directory: ~/brave-workspace
+    environment:
+      GIT_CACHE_PATH: /home/circleci/brave-workspace/.circleci-git-cache
     steps:
       - checkout:
           path: src/brave
+
+      - restore_cache:
+          keys:
+            - brave-pnpm-v1-{{ checksum "src/brave/pnpm-lock.yaml" }}
+            - brave-pnpm-v1-
+
+      - restore_cache:
+          keys:
+            - brave-git-cache-v1-{{ .Branch }}-
 
       - run:
           name: Prepare Linux build host
@@ -44,12 +55,31 @@ jobs:
             pnpm --version
 
       - run:
-          name: Initialize Brave and Chromium Android sources
+          name: Install locked Brave JavaScript dependencies
           command: |
             set -euo pipefail
+            source "$BASH_ENV"
             cd src/brave
-            pnpm run init --target_os=android --target_arch=arm64
+            pnpm install --frozen-lockfile --yes
+
+      - save_cache:
+          key: brave-pnpm-v1-{{ checksum "src/brave/pnpm-lock.yaml" }}
+          paths:
+            - ~/.local/share/pnpm/store
+
+      - run:
+          name: Initialize Brave and Chromium Android sources (shallow history)
+          command: |
+            set -euo pipefail
+            source "$BASH_ENV"
+            cd src/brave
+            node ./build/commands/scripts/sync.ts --init --target_os=android --target_arch=arm64 --no-history
           no_output_timeout: 60m
+
+      - save_cache:
+          key: brave-git-cache-v1-{{ .Branch }}-{{ .BuildNum }}
+          paths:
+            - .circleci-git-cache
 
       - run:
           name: Install Android build dependencies
