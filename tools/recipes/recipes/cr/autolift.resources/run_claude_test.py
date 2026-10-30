@@ -8,9 +8,13 @@
 import contextlib
 import io
 import json
+import os
 from pathlib import Path
+import signal
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 import run_claude
@@ -231,6 +235,106 @@ class BackgroundTest(unittest.TestCase):
         )
         digest.handle_line(json.dumps(_notification('b1')))
         self.assertEqual(printed[1:], ['  ⏹ b1 completed'])
+
+
+# A stand-in for claude: starts `sleep` in a session of its own, as Claude does
+# with background commands, writes its PID, and waits.
+_FAKE_CLAUDE = """\
+import subprocess, sys, time
+sleeper = subprocess.Popen(['sleep', '300'], start_new_session=True)
+with open(sys.argv[1], 'w') as file:
+    file.write(str(sleeper.pid))
+time.sleep(float(sys.argv[2]))
+"""
+
+_SCRIPT = Path(__file__).resolve().parent / 'run_claude.py'
+
+
+def _alive(pid: int) -> bool:
+    """Whether *pid* runs, zombies aside."""
+    try:
+        stat = Path(f'/proc/{pid}/stat').read_text(encoding='utf-8')
+    except FileNotFoundError:
+        return False
+    return stat.rsplit(')', 1)[1].split()[0] != 'Z'
+
+
+class ProcessCleanupTest(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.tmp = Path(self._tmp.name)
+        self.pid_file = self.tmp / 'sleeper.pid'
+
+    def _start(self, cmd_prefix, claude_seconds):
+        return subprocess.Popen(
+            [
+                *cmd_prefix,
+                sys.executable,
+                str(_SCRIPT),
+                '--log',
+                str(self.tmp / 'claude.jsonl'),
+                '--',
+                sys.executable,
+                '-c',
+                _FAKE_CLAUDE,
+                str(self.pid_file),
+                str(claude_seconds),
+            ],
+            stdout=subprocess.DEVNULL,
+        )
+
+    def _sleeper(self) -> int:
+        deadline = time.monotonic() + 10
+        while not self.pid_file.exists() or not self.pid_file.read_text():
+            self.assertLess(time.monotonic(), deadline, 'claude never started')
+            time.sleep(0.05)
+        pid = int(self.pid_file.read_text())
+        self.addCleanup(_kill_quietly, pid)
+        return pid
+
+    def _assert_stops(self, pid):
+        deadline = time.monotonic() + 15
+        while _alive(pid):
+            self.assertLess(time.monotonic(), deadline, f'{pid} still runs')
+            time.sleep(0.05)
+
+    def test_left_behind_processes_stop_when_claude_exits(self):
+        process = self._start([], 0)
+        sleeper = self._sleeper()
+        self.assertEqual(process.wait(timeout=30), 0)
+        self._assert_stops(sleeper)
+
+    def test_sigterm_stops_everything(self):
+        process = self._start([], 300)
+        sleeper = self._sleeper()
+        self.assertTrue(_alive(sleeper))
+        process.send_signal(signal.SIGTERM)
+        self.assertEqual(process.wait(timeout=30), 128 + signal.SIGTERM)
+        self._assert_stops(sleeper)
+
+    def test_unrelated_processes_are_left_alone(self):
+        # Like another Claude session on the machine: not below the run.
+        unrelated = subprocess.Popen(['sleep', '300'], start_new_session=True)
+        self.addCleanup(unrelated.wait)
+        self.addCleanup(unrelated.kill)
+        process = self._start([], 0)
+        self._sleeper()
+        self.assertEqual(process.wait(timeout=30), 0)
+        self.assertTrue(_alive(unrelated.pid))
+
+    def test_engine_dying_stops_everything(self):
+        # `sh` stands for the engine, and is killed outright.
+        engine = self._start(['sh', '-c', '"$@"; :', 'engine'], 300)
+        sleeper = self._sleeper()
+        engine.kill()
+        engine.wait(timeout=30)
+        self._assert_stops(sleeper)
+
+
+def _kill_quietly(pid: int) -> None:
+    with contextlib.suppress(ProcessLookupError):
+        os.kill(pid, signal.SIGKILL)
 
 
 class RunTest(unittest.TestCase):

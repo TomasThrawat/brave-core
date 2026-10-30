@@ -16,12 +16,18 @@ live, until Claude is notified that they finished:
 from __future__ import annotations
 
 import argparse
+import collections
+import contextlib
+import ctypes
 import json
+import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import threading
+import time
 from typing import Any, Callable
 
 # How many lines of a tool's output, and how many characters of a line, are
@@ -51,6 +57,14 @@ _BACKGROUND_RE = re.compile(
 
 # Brockit's log lines end in the right-aligned source of the log call.
 _LOG_SOURCE_RE = re.compile(r'\s{2,}[\w.]+\.py:\d+$')
+
+# How long the processes left behind get to exit after SIGTERM, in seconds,
+# before they are killed.
+KILL_GRACE = 10.0
+
+# From `<linux/prctl.h>`.
+_PR_SET_PDEATHSIG = 1
+_PR_SET_CHILD_SUBREAPER = 36
 
 
 def _shorten(text: str, width: int = LINE_WIDTH) -> str:
@@ -257,29 +271,100 @@ class Digest:
         self._followers.clear()
 
 
+def _prctl(option: int, value: int) -> None:
+    libc = ctypes.CDLL(None, use_errno=True)
+    if libc.prctl(option, value, 0, 0, 0) != 0:
+        raise OSError(ctypes.get_errno(), f'prctl({option}) failed')
+
+
+def _descendants(root: int) -> list[int]:
+    """The PIDs of every process below *root*, from `/proc`."""
+    children = collections.defaultdict(list)
+    for entry in Path('/proc').iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            stat = (entry / 'stat').read_text(encoding='utf-8')
+        except OSError:
+            continue
+        # The command name, in parentheses, may itself hold spaces.
+        ppid = int(stat.rsplit(')', 1)[1].split()[1])
+        children[ppid].append(int(entry.name))
+    found = []
+    pending = [root]
+    while pending:
+        for child in children[pending.pop()]:
+            found.append(child)
+            pending.append(child)
+    return found
+
+
+def _reap() -> None:
+    """Collects the exit status of the children that exited."""
+    with contextlib.suppress(ChildProcessError):
+        while os.waitpid(-1, os.WNOHANG)[0]:
+            pass
+
+
+def kill_descendants() -> None:
+    """Stops every process left below this one: SIGTERM, then SIGKILL for
+    those still there after `KILL_GRACE`."""
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        pids = _descendants(os.getpid())
+        if not pids:
+            return
+        for pid in pids:
+            with contextlib.suppress(ProcessLookupError):
+                os.kill(pid, sig)
+        deadline = time.monotonic() + KILL_GRACE
+        while time.monotonic() < deadline:
+            _reap()
+            if not _descendants(os.getpid()):
+                return
+            time.sleep(0.1)
+
+
+def _exit_on_signal(signum: int, _frame: Any) -> None:
+    raise SystemExit(128 + signum)
+
+
 def run(cmd: list[str], log: Path) -> int:
     """Runs *cmd*, logging its stream to *log* and printing the digest.
+
+    Whatever *cmd* leaves running when it exits, or when this is stopped, is
+    stopped too.
 
     Returns the exit code: Claude's own, or 1 if it reported an error result
     while exiting 0.
     """
     log.parent.mkdir(parents=True, exist_ok=True)
     digest = Digest(lambda text: print(text, flush=True))
-    try:
-        with (
-            log.open('w', encoding='utf-8') as log_file,
-            subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, text=True, encoding='utf-8'
-            ) as process,
-        ):
-            assert process.stdout is not None
-            for line in process.stdout:
-                log_file.write(line)
-                log_file.flush()
-                digest.handle_line(line)
-    finally:
-        digest.close()
-    return process.returncode or int(digest.failed)
+
+    def pump(stream, log_file) -> None:
+        for line in stream:
+            log_file.write(line)
+            log_file.flush()
+            digest.handle_line(line)
+
+    with log.open('w', encoding='utf-8') as log_file:
+        process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, text=True, encoding='utf-8'
+        )
+        # Read on the side: what Claude leaves running may hold its stdout
+        # open, so the end of the stream can't tell that Claude is done.
+        reader = threading.Thread(
+            target=pump, args=(process.stdout, log_file), daemon=True
+        )
+        reader.start()
+        try:
+            returncode = process.wait()
+        finally:
+            kill_descendants()
+            # The stream ends once nothing below holds it open any more.
+            reader.join(timeout=KILL_GRACE)
+            process.stdout.close()
+            digest.close()
+    return returncode or int(digest.failed)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -289,6 +374,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument('cmd', nargs='+', help='The claude command, after --.')
     args = parser.parse_args(argv)
+
+    engine = os.getppid()
+    # Claude runs background commands in sessions of their own, which signals
+    # to its process group don't reach, and which outlive Claude. As a
+    # subreaper, this process inherits them when their parent exits, so that
+    # `run` can stop them.
+    _prctl(_PR_SET_CHILD_SUBREAPER, 1)
+    # The engine stopping, even by SIGKILL, stops this too, and so the rest.
+    _prctl(_PR_SET_PDEATHSIG, signal.SIGTERM)
+    for signum in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(signum, _exit_on_signal)
+    if os.getppid() != engine:
+        # The engine was gone before the death signal was armed.
+        return 1
     return run(args.cmd, args.log)
 
 
