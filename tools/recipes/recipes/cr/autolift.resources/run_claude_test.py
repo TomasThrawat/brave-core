@@ -19,6 +19,8 @@ import unittest
 
 import run_claude
 
+_DIVIDER = run_claude._OUTPUT_DIVIDER
+
 
 def _assistant(*content, parent=None):
     return {
@@ -107,7 +109,7 @@ class FormatEventTest(unittest.TestCase):
         text = '[12:02:25] * Changes for this bump        terminal.py:358   '
         self.assertEqual(
             run_claude.format_event(_tool_result(text)),
-            ['  │ [12:02:25] * Changes for this bump'],
+            [_DIVIDER, '  │ [12:02:25] * Changes for this bump'],
         )
 
     def test_task_notification(self):
@@ -133,23 +135,23 @@ class FormatEventTest(unittest.TestCase):
         # The progress line is the one too many.
         self.assertEqual(
             run_claude.format_event(_tool_result(text)),
-            [f'  │ {line}' for line in lines],
+            [_DIVIDER, *(f'  │ {line}' for line in lines)],
         )
         self.assertEqual(
             run_claude.format_event(_tool_result('a\rb\nc')),
-            ['  │ b', '  │ c'],
+            [_DIVIDER, '  │ b', '  │ c'],
         )
 
     def test_tool_result_blocks_and_errors(self):
         event = _tool_result([{'type': 'text', 'text': 'boom'}], True)
-        self.assertEqual(run_claude.format_event(event), ['  ✘ boom'])
+        self.assertEqual(run_claude.format_event(event), [_DIVIDER, '  ✘ boom'])
 
     def test_long_lines_go_on_over_more_lines(self):
         width = run_claude.LINE_WIDTH
         text = 'a' * width + 'b' * width + 'c'
         self.assertEqual(
             run_claude.format_event(_tool_result(text)),
-            [f'  │ {"a" * width}', f'  │ {"b" * width}', '  │ c'],
+            [_DIVIDER, f'  │ {"a" * width}', f'  │ {"b" * width}', '  │ c'],
         )
 
     def test_result(self):
@@ -230,7 +232,7 @@ class BackgroundTest(unittest.TestCase):
         digest.handle_line(json.dumps(_notification('b1')))
         digest.close()
         self.assertEqual(
-            printed[1:],
+            printed[2:],
             [
                 '  ┆ [1/2] CXX a.o',
                 '  ┆ step 2',
@@ -272,7 +274,7 @@ class BackgroundTest(unittest.TestCase):
             json.dumps(_started_in_background('b1', self.output))
         )
         digest.handle_line(json.dumps(_notification('b1')))
-        self.assertEqual(printed[1:], ['  ⏹ b1 completed'])
+        self.assertEqual(printed[2:], ['  ⏹ b1 completed'])
 
 
 # A stand-in for claude: starts `sleep` in a session of its own, as Claude does

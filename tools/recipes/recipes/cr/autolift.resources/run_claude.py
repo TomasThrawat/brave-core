@@ -58,6 +58,8 @@ _BACKGROUND_RE = re.compile(
     r'Output is being written to: (?P<path>\S+?)\.?(?:\s|$)'
 )
 
+_OUTPUT_DIVIDER = '  ┄┄┄┄'
+
 # Brockit's log lines end in the right-aligned source of the log call.
 _LOG_SOURCE_RE = re.compile(r'\s{2,}[\w.]+\.py:\d+$')
 
@@ -180,7 +182,11 @@ def format_event(event: dict[str, Any]) -> list[str]:
             if block.get('type') != 'tool_result':
                 continue
             marker = '✘' if block.get('is_error') else '│'
-            for line in _tail(_result_text(block.get('content'))):
+            tail = _tail(_result_text(block.get('content')))
+            if tail:
+                # Sets the output apart from the call above it.
+                lines.append(_OUTPUT_DIVIDER)
+            for line in tail:
                 lines += _wrap(f'  {marker} ', line)
     elif kind == 'result':
         parts = [f'■ {subtype}']
