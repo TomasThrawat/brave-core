@@ -185,7 +185,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
         mMvTilesContainerLayout =
                 (ViewGroup) ((ViewStub) findViewById(R.id.mv_tiles_layout_stub)).inflate();
         mMvTilesContainerLayout.setPadding(0, 0, 0, 0);
-        mMvTilesContainerLayout.setVisibility(View.VISIBLE);
+        mMvTilesContainerLayout.setVisibility(View.GONE);
 
         mMvTilesContainerLayout.post(
                 new Runnable() {
@@ -303,6 +303,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
         LinearLayoutManagerWrapper linearLayoutManager =
                 new LinearLayoutManagerWrapper(mActivity, LinearLayoutManager.VERTICAL, false);
         mRecyclerView.setLayoutManager(linearLayoutManager);
+        mRecyclerView.setVisibility(View.GONE);
         mRecyclerView.post(
                 new Runnable() {
                     @Override
@@ -1068,7 +1069,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
             mNtpAdapter.setNtpImage(mNtpImageGlobal);
         }
 
-        boolean wasWallpaperShown = true;
+        boolean wasWallpaperShown = false;
         if (mNtpImageGlobal instanceof Wallpaper && ((Wallpaper) mNtpImageGlobal).isRichMedia()) {
             setupSponsoredBackgroundContent((Wallpaper) mNtpImageGlobal);
         } else {
@@ -1095,19 +1096,8 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
     }
 
     private void setupSponsoredBackgroundContent(Wallpaper wallpaper) {
-        if (mSponsoredRichMediaWebView == null) {
-            mSponsoredRichMediaWebView =
-                    new SponsoredRichMediaWebView(mActivity, mWindowAndroid, mProfile);
-
-            mBackgroundSponsoredRichMediaView = findViewById(R.id.bg_sponsored_rich_media_view);
-            mBackgroundSponsoredRichMediaView.setVisibility(View.VISIBLE);
-            mBackgroundSponsoredRichMediaView.addView(mSponsoredRichMediaWebView.getView());
-        }
-
-        mSponsoredRichMediaWebView.maybeLoadSponsoredRichMedia(
-                wallpaper.getWallpaperId(), wallpaper.getCreativeInstanceId());
-
-        maybeCreateSafeAreaReporter();
+        // The approved minimal home design is a plain black canvas.
+        // Do not attach sponsored wallpaper media behind the native search box.
     }
 
     private void maybeResetSponsoredRichMediaBackground() {
@@ -1155,6 +1145,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
     private void setBackgroundImage(NTPImage ntpImage) {
         mBgImageView = (ImageView) findViewById(R.id.bg_image_view);
         mBgImageView.setScaleType(ImageView.ScaleType.MATRIX);
+        mBgImageView.setVisibility(View.GONE);
 
         if (mBgImageViewOnGlobalLayoutListener == null) {
             mBgImageViewOnGlobalLayoutListener =

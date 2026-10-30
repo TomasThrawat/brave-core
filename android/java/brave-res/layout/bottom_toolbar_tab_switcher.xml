@@ -19,7 +19,7 @@
         android:id="@+id/bottom_toolbar_buttons"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/default_bg_color_baseline" >
+        android:background="#000000" >
 
         <LinearLayout
             android:orientation="horizontal"
@@ -34,6 +34,8 @@
                 android:layout_height="match_parent"
                 android:layout_gravity="start|center_vertical"
                 android:contentDescription="@string/accessibility_toolbar_btn_new_tab"
+                android:textColor="#FFFFFF"
+                app:iconTint="#FFFFFF"
                 style="?attr/newTabButtonStyle" />
 
             <include layout="@layout/toolbar_space" />

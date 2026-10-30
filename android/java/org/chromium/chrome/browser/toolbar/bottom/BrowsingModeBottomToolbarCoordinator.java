@@ -5,9 +5,13 @@
 
 package org.chromium.chrome.browser.toolbar.bottom;
 
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
+import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import com.google.android.material.button.MaterialButton;
 
@@ -84,6 +88,9 @@ public class BrowsingModeBottomToolbarCoordinator {
 
     private final BookmarksButton mBookmarkButton;
     private final MenuButton mMenuButton;
+    private final View mDownloadsButton;
+    private final View mShieldsButton;
+    @Nullable private View mTopToolbarShieldsButton;
     @Nullable private ThemeColorProvider mThemeColorProvider;
 
     BrowsingModeBottomToolbarCoordinator(
@@ -116,16 +123,11 @@ public class BrowsingModeBottomToolbarCoordinator {
         mTabSwitcherButtonCoordinator = new TabSwitcherButtonCoordinator(mTabSwitcherButtonView);
 
         mTabSwitcherButtonView.setOnLongClickListener(tabSwitcherLongClickListener);
-        if (BottomToolbarVariationManager.isNewTabButtonOnBottomControls()) {
-            mNewTabButton.setVisibility(View.VISIBLE);
-        }
-        if (BottomToolbarVariationManager.isHomeButtonOnBottomControls()) {
-            mBraveHomeButton.setVisibility(View.VISIBLE);
-        }
-
-        if (BottomToolbarVariationManager.isTabSwitcherOnBottomControls()) {
-            mTabSwitcherButtonView.setVisibility(View.VISIBLE);
-        }
+        // The Penpot design uses the native tab switcher as the second of four fixed actions.
+        mTabSwitcherButtonView.setVisibility(View.VISIBLE);
+        // The new-tab action belongs to the native tab overview bar, not the four-action
+        // browsing toolbar. It is exposed only while the tab overview is active.
+        mNewTabButton.setVisibility(View.GONE);
 
         mBookmarkButton = mToolbarRoot.findViewById(R.id.bottom_bookmark_button);
         if (BottomToolbarVariationManager.isBookmarkButtonOnBottomControls()) {
@@ -149,12 +151,43 @@ public class BrowsingModeBottomToolbarCoordinator {
         }
 
         mMenuButton = mToolbarRoot.findViewById(R.id.menu_button_wrapper);
+        mDownloadsButton = mToolbarRoot.findViewById(R.id.bottom_downloads_button);
+        mShieldsButton = mToolbarRoot.findViewById(R.id.bottom_shields_button);
+        mDownloadsButton.setOnClickListener(
+                v -> {
+                    try {
+                        BraveActivity activity = BraveActivity.getBraveActivity();
+                        if (activity == null) return;
+                        activity.getMenuOrKeyboardActionController()
+                                .onMenuOrKeyboardAction(
+                                        R.id.downloads_menu_id,
+                                        false,
+                                        /* menuItemData= */ null,
+                                        /* triggeringMotion= */ null);
+                    } catch (BraveActivity.BraveActivityNotFoundException e) {
+                        Log.e(TAG, "Downloads button click " + e);
+                    }
+                });
+        mShieldsButton.setOnClickListener(
+                v -> {
+                    if (mTopToolbarShieldsButton != null) {
+                        // Reuse Brave's original handler so the real per-site Shields state is shown.
+                        mTopToolbarShieldsButton.performClick();
+                    } else {
+                        Log.e(TAG, "The native Brave Shields button is not attached.");
+                    }
+                });
     }
 
     /**
      * @param isVisible Whether the bottom toolbar is visible.
      */
     void onVisibilityChanged(boolean isVisible) {}
+
+    /** Connect the minimal bottom Shields action to Brave's existing native Shields handler. */
+    void setTopToolbarRoot(ViewGroup topToolbarRoot) {
+        mTopToolbarShieldsButton = topToolbarRoot.findViewById(R.id.brave_shields_button);
+    }
 
     /**
      * Initialize the bottom toolbar with the components that had native initialization
@@ -187,9 +220,7 @@ public class BrowsingModeBottomToolbarCoordinator {
                         return UpdateMenuItemHelper.getInstance(profile).getUiState().buttonState;
                     };
             BraveMenuButtonCoordinator.setupPropertyModel(mMenuButton, menuButtonStateSupplier);
-            if (!BottomToolbarVariationManager.isMenuButtonOnBottomControls()) {
-                mMenuButton.setVisibility(View.GONE);
-            }
+            mMenuButton.setVisibility(View.VISIBLE);
         }
         mThemeColorProvider = themeColorProvider;
         mMediator.setThemeColorProvider(themeColorProvider);
@@ -218,12 +249,10 @@ public class BrowsingModeBottomToolbarCoordinator {
                 mThemeColorProvider.getTint(),
                 mThemeColorProvider.getBrandedColorScheme());
 
-        if (BottomToolbarVariationManager.isTabSwitcherOnBottomControls()) {
-            mTabSwitcherButtonCoordinator.setTabSwitcherListener(tabSwitcherListener);
-            mTabSwitcherButtonCoordinator.setThemeColorProvider(themeColorProvider);
-            mTabSwitcherButtonCoordinator.setTabCountSupplier(
-                    tabModelSelector.getCurrentModelTabCountSupplier());
-        }
+        mTabSwitcherButtonCoordinator.setTabSwitcherListener(tabSwitcherListener);
+        mTabSwitcherButtonCoordinator.setTabCountSupplier(
+                tabModelSelector.getCurrentModelTabCountSupplier());
+        mTabSwitcherButtonView.setTint(ColorStateList.valueOf(Color.WHITE));
 
         mBookmarkButton.setThemeColorProvider(themeColorProvider);
         mBookmarkButton.onTintChanged(
@@ -231,11 +260,12 @@ public class BrowsingModeBottomToolbarCoordinator {
                 mThemeColorProvider.getTint(),
                 mThemeColorProvider.getBrandedColorScheme());
 
-        mThemeColorProvider.addTintObserver(mMenuButton);
         mMenuButton.onTintChanged(
                 mThemeColorProvider.getTint(),
                 mThemeColorProvider.getTint(),
                 mThemeColorProvider.getBrandedColorScheme());
+        ImageView menuIcon = mMenuButton.findViewById(R.id.menu_button);
+        if (menuIcon != null) menuIcon.setImageTintList(ColorStateList.valueOf(Color.WHITE));
 
         new OneShotCallback<>(
                 menuButtonHelperSupplier,
@@ -309,9 +339,6 @@ public class BrowsingModeBottomToolbarCoordinator {
         mSearchAccelerator.destroy();
         mTabSwitcherButtonCoordinator.destroy();
         mBookmarkButton.destroy();
-        if (mThemeColorProvider != null) {
-            mThemeColorProvider.removeTintObserver(mMenuButton);
-        }
     }
 
     public void updateBookmarkButton(boolean isBookmarked, boolean editingAllowed) {
@@ -322,6 +349,10 @@ public class BrowsingModeBottomToolbarCoordinator {
 
     View getNewTabButtonParent() {
         return (View) mNewTabButton.getParent();
+    }
+
+    MaterialButton getNewTabButton() {
+        return mNewTabButton;
     }
 
     BookmarksButton getBookmarkButton() {

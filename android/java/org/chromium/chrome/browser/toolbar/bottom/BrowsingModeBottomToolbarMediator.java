@@ -6,6 +6,7 @@
 package org.chromium.chrome.browser.toolbar.bottom;
 
 import android.content.Context;
+import android.graphics.Color;
 
 import androidx.core.content.ContextCompat;
 
@@ -104,6 +105,7 @@ class BrowsingModeBottomToolbarMediator implements ThemeColorObserver, LayoutSta
     }
 
     private void updateColor(int primaryColor) {
-        mModel.set(BrowsingModeBottomToolbarModel.PRIMARY_COLOR, primaryColor);
+        // The browser toolbar follows the approved OLED-black Penpot design in every theme.
+        mModel.set(BrowsingModeBottomToolbarModel.PRIMARY_COLOR, Color.BLACK);
     }
 }

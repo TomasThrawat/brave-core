@@ -5,6 +5,8 @@
 
 package org.chromium.chrome.browser.toolbar.bottom;
 
+import android.graphics.Color;
+
 import org.chromium.chrome.browser.theme.ThemeColorProvider;
 import org.chromium.chrome.browser.theme.ThemeColorProvider.ThemeColorObserver;
 
@@ -55,6 +57,6 @@ class TabSwitcherBottomToolbarMediator implements ThemeColorObserver {
 
     @Override
     public void onThemeColorChanged(int primaryColor, boolean shouldAnimate) {
-        mModel.set(TabSwitcherBottomToolbarModel.PRIMARY_COLOR, primaryColor);
+        mModel.set(TabSwitcherBottomToolbarModel.PRIMARY_COLOR, Color.BLACK);
     }
 }
