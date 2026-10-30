@@ -276,21 +276,16 @@ commit body and in the report. Then carry on. Examples from cr158:
   `run_in_background`): `autolift.py lift` and `lift --continue`,
   `pnpm run init`, the builds, the presubmit and long test runs. Then end the
   turn: you are notified when the command finishes. Don't poll it, `sleep`, or
-  read its output file in the meantime. A CI run already follows that output on
-  its console, and every check is another paid turn.
-- Send a command's output to its log and to the console at once, as the commands
-  below do: `set -o pipefail; <command> 2>&1 | tee <log>`. `pipefail` keeps the
-  command's exit status. `autolift.py lift` keeps its own log, and prints
-  Brockit's output as it goes.
-- Don't pipe a background command through `tail`, `head` or `grep`: its output
-  reaches neither you nor the console until it finishes, and you don't see it
-  anyway until you read it (cr159: `autolift.py lift 2>&1 | tail -150` showed
-  nothing for the whole lift).
-- Once it finishes, read only what you need: from the log
-  (`autolift.py build-summary`, `grep`, `tail`), or the end of the output file
-  the notification names. Never the whole output: a build's doesn't fit in
-  context. `autolift.py lift` prints its summary last, and appends it to the
-  report.
+  read its output in the meantime: every check is another paid turn.
+- Keep their output out of your context: send it to a log in `.autolift/cr<N>/`
+  (`> .autolift/cr<N>/<name>.log 2>&1`), as the commands below do. Never let it
+  print, and never pipe it through `tee`, `tail`, `head` or `grep` (cr159:
+  `autolift.py lift 2>&1 | tail -150` showed nothing for the whole lift). A CI
+  run streams every `*.log` there to its console as it is written.
+  `autolift.py lift` writes Brockit's output to its own log there, and prints
+  only its summary.
+- Once it finishes, read only what you need from the log:
+  `autolift.py build-summary`, `grep`, `tail -n`. Never the whole log.
 
 ### Machine state
 
@@ -569,10 +564,9 @@ After `--continue`:
 ### 3. Linux build
 
 ```sh
-set -o pipefail
 pnpm run build --target=brave:all \
     --gn=enable_updater:true --gn=use_prebuilt_omaha4:false \
-    2>&1 | tee .autolift/cr<N>/build-linux.log
+    > .autolift/cr<N>/build-linux.log 2>&1
 ```
 
 Use exactly this command; never raw `autoninja`, `ninja` or `siso`. The out dir
@@ -662,11 +656,10 @@ manglers.
 ### 6. Android
 
 ```sh
-set -o pipefail
-pnpm run init --target_os=android 2>&1 | tee .autolift/cr<N>/init-android.log
+pnpm run init --target_os=android > .autolift/cr<N>/init-android.log 2>&1
 pnpm run build Static --target_os=android --target_arch=x64 \
     --target=brave:all --gn=android_static_analysis:on \
-    2>&1 | tee .autolift/cr<N>/build-android.log
+    > .autolift/cr<N>/build-android.log 2>&1
 ```
 
 Use `x64`, so that tests can run on an emulator. `android_static_analysis=on`
@@ -704,9 +697,8 @@ Once the Linux and Android builds pass, run the presubmit against the branch's
 upstream (the base):
 
 ```sh
-set -o pipefail
 pnpm run presubmit --base "$(git rev-parse --abbrev-ref '@{upstream}')" \
-    2>&1 | tee .autolift/cr<N>/presubmit.log
+    > .autolift/cr<N>/presubmit.log 2>&1
 ```
 
 Address what it reports, errors above all: commit each fix by the usual rules

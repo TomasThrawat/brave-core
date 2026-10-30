@@ -514,18 +514,13 @@ def _cmd_lift(args: argparse.Namespace) -> int:
     if args.continue_:
         cmd.append('--continue')
     with log.open('wb') as file:
-        process = subprocess.Popen(
+        returncode = subprocess.run(
             cmd,
             cwd=repository.brave.root,
-            stdout=subprocess.PIPE,
+            stdout=file,
             stderr=subprocess.STDOUT,
-        )
-        # Copied to stdout too, so that the lift can be followed as it runs.
-        for chunk in process.stdout:
-            file.write(chunk)
-            sys.stdout.buffer.write(chunk)
-            sys.stdout.buffer.flush()
-        returncode = process.wait()
+            check=False,
+        ).returncode
     summary = with_package_range(
         summarize_lift(log.read_bytes().decode('utf-8', errors='replace')),
         _package_range(),
