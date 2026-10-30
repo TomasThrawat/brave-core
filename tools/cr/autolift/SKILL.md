@@ -282,9 +282,15 @@ commit body and in the report. Then carry on. Examples from cr158:
   below do: `set -o pipefail; <command> 2>&1 | tee <log>`. `pipefail` keeps the
   command's exit status. `autolift.py lift` keeps its own log, and prints
   Brockit's output as it goes.
-- Once it finishes, read what you need from the log
-  (`autolift.py build-summary`, `grep`, `tail`), not the whole output: a build's
-  output doesn't fit in context. `autolift.py lift` prints its summary last.
+- Don't pipe a background command through `tail`, `head` or `grep`: its output
+  reaches neither you nor the console until it finishes, and you don't see it
+  anyway until you read it (cr159: `autolift.py lift 2>&1 | tail -150` showed
+  nothing for the whole lift).
+- Once it finishes, read only what you need: from the log
+  (`autolift.py build-summary`, `grep`, `tail`), or the end of the output file
+  the notification names. Never the whole output: a build's doesn't fit in
+  context. `autolift.py lift` prints its summary last, and appends it to the
+  report.
 
 ### Machine state
 
