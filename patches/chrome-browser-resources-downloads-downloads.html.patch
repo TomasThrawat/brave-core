@@ -1,11 +1,11 @@
 diff --git a/chrome/browser/resources/downloads/downloads.html b/chrome/browser/resources/downloads/downloads.html
 --- a/chrome/browser/resources/downloads/downloads.html
 +++ b/chrome/browser/resources/downloads/downloads.html
-@@ -7,6 +7,34 @@
+@@ -7,6 +7,41 @@
    <base href="chrome://downloads">
    <title>$i18n{title}</title>
    <link rel="stylesheet" href="chrome://resources/css/md_colors.css">
-++  <style>
++  <style>
 +    :root, html, body {
 +      color-scheme: dark;
 +      background: #000000 !important;
@@ -18,7 +18,14 @@ diff --git a/chrome/browser/resources/downloads/downloads.html b/chrome/browser/
 +      --cr-link-color: #FFFFFF;
 +      --cr-toolbar-background: #000000;
 +      --cr-card-background-color: #080808;
++      --cr-card-border-radius: 14px;
++      --cr-card-shadow: inset 0 0 0 1px #252525;
 +      --cr-separator-color: #252525;
++      --color-download-manager-item-background: #080808;
++      --color-download-manager-item-background-inactive: #080808;
++      --color-download-manager-item-inactive: #9A9A9A;
++      --color-download-manager-progress: #FFFFFF;
++      --md-background-color: #252525;
 +      background: #000000 !important;
 +      color: #FFFFFF !important;
 +    }

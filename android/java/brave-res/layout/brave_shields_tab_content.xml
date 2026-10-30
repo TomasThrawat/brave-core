@@ -12,7 +12,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:background="#000000"
+    android:padding="20dp">
 
     <!-- Shield Status Card -->
     <LinearLayout
@@ -27,8 +28,8 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="24dp">
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="20dp">
 
             <!-- Favicon container -->
             <FrameLayout
@@ -70,7 +71,7 @@
                     style="@style/LargeRegular"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="#FFFFFF"
+                    android:textColor="#9A9A9A"
                     android:maxLines="1"
                     android:ellipsize="end"
                     tools:text="Shields up for this site"/>
@@ -95,7 +96,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="?attr/colorSurfaceContainer"/>
+            android:background="#252525"/>
 
         <!-- Block counter -->
         <LinearLayout
@@ -105,7 +106,7 @@
             android:orientation="horizontal"
             android:gravity="center"
             android:baselineAligned="false"
-            android:paddingHorizontal="16dp"
+            android:paddingHorizontal="20dp"
             android:paddingVertical="16dp"
             android:clipChildren="false"
             android:clipToPadding="false">
@@ -127,7 +128,7 @@
                 android:textSize="20sp"
                 android:lineHeight="26sp"
                 android:includeFontPadding="false"
-                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textColor="#9A9A9A"
                 android:fontFamily="sans-serif-medium"
                 android:layout_marginEnd="8dp"
                 tools:text="42"/>
@@ -139,7 +140,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:includeFontPadding="false"
-                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textColor="#9A9A9A"
                 tools:text="Trackers, ads, and more blocked"/>
 
         </LinearLayout>
@@ -153,9 +154,9 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="12dp"
-        android:layout_marginTop="8dp"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="14dp"
+        android:layout_marginTop="12dp"
         android:background="@drawable/advanced_options_bg"
         android:visibility="gone">
 
@@ -173,7 +174,7 @@
             android:layout_width="wrap_content"
             android:layout_height="44dp"
             android:minWidth="80dp"
-            android:paddingHorizontal="16dp"
+            android:paddingHorizontal="20dp"
             android:gravity="center"
             android:text="@string/report_broken_site_button"
             android:textSize="14sp"
@@ -192,7 +193,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:background="@drawable/advanced_options_bg"
         android:clipToOutline="true">
 
@@ -203,8 +204,8 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="12dp"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="14dp"
             android:clickable="true"
             android:focusable="true"
             android:background="?android:attr/selectableItemBackground">
@@ -217,7 +218,7 @@
                 android:layout_weight="1"
                 android:text="@string/advanced_controls"
                 android:duplicateParentState="true"
-                android:textColor="?attr/colorPrimary"/>
+                android:textColor="#FFFFFF"/>
 
             <ImageView
                 android:id="@+id/advanced_options_arrow"
@@ -225,7 +226,7 @@
                 android:layout_height="24dp"
                 android:src="@drawable/ic_arrow_small_down"
                 android:duplicateParentState="true"
-                app:tint="@color/advanced_options_toggle_color"
+                app:tint="#9A9A9A"
                 android:contentDescription="@null"/>
 
         </LinearLayout>
@@ -242,7 +243,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="?attr/colorSurfaceContainer"/>
+                android:background="#252525"/>
 
             <!-- 1. Upgrade connections to HTTPS (navigation) -->
             <LinearLayout
@@ -251,8 +252,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="14dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:background="?android:attr/selectableItemBackground">
@@ -269,7 +270,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_small_right"
-                    app:tint="?attr/colorOnSurfaceVariant"
+                    app:tint="#9A9A9A"
                     android:contentDescription="@null"/>
 
             </LinearLayout>
@@ -278,15 +279,15 @@
                 android:id="@+id/https_upgrade_divider"
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="?attr/colorSurfaceContainer"/>
+                android:background="#252525"/>
 
             <!-- 2. Block scripts (toggle) -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="56dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="16dp">
+                android:paddingHorizontal="20dp">
 
                 <TextView
                     style="@style/LargeRegular"
@@ -308,7 +309,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="?attr/colorSurfaceContainer"/>
+                android:background="#252525"/>
 
             <!-- 3. Shred site's data (navigation) -->
             <LinearLayout
@@ -317,8 +318,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="14dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:background="?android:attr/selectableItemBackground">
@@ -335,7 +336,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_small_right"
-                    app:tint="?attr/colorOnSurfaceVariant"
+                    app:tint="#9A9A9A"
                     android:contentDescription="@null"/>
 
             </LinearLayout>
@@ -343,7 +344,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="?attr/colorSurfaceContainer"/>
+                android:background="#252525"/>
 
             <!-- 4. Block trackers & ads (navigation) -->
             <LinearLayout
@@ -352,8 +353,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="14dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:background="?android:attr/selectableItemBackground">
@@ -370,7 +371,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_small_right"
-                    app:tint="?attr/colorOnSurfaceVariant"
+                    app:tint="#9A9A9A"
                     android:contentDescription="@null"/>
 
             </LinearLayout>
@@ -378,7 +379,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="?attr/colorSurfaceContainer"/>
+                android:background="#252525"/>
 
             <!-- 5. Block cookies (navigation) -->
             <LinearLayout
@@ -387,8 +388,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="14dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:background="?android:attr/selectableItemBackground">
@@ -405,7 +406,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_small_right"
-                    app:tint="?attr/colorOnSurfaceVariant"
+                    app:tint="#9A9A9A"
                     android:contentDescription="@null"/>
 
             </LinearLayout>
@@ -413,15 +414,15 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="?attr/colorSurfaceContainer"/>
+                android:background="#252525"/>
 
             <!-- 6. Block fingerprinting (toggle) -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="56dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="16dp">
+                android:paddingHorizontal="20dp">
 
                 <TextView
                     style="@style/LargeRegular"
@@ -443,7 +444,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="?attr/colorSurfaceContainer"/>
+                android:background="#252525"/>
 
             <!-- 7. Block element (action with launch icon) -->
             <LinearLayout
@@ -452,8 +453,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="14dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:background="?android:attr/selectableItemBackground">
@@ -470,7 +471,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_launch"
-                    app:tint="?attr/colorOnSurfaceVariant"
+                    app:tint="#9A9A9A"
                     android:contentDescription="@null"/>
 
             </LinearLayout>
@@ -479,7 +480,7 @@
                 android:id="@+id/clear_blocked_elements_divider"
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="?attr/colorSurfaceContainer"/>
+                android:background="#252525"/>
 
             <!-- 8. Clear all blocked elements button -->
             <TextView
@@ -489,8 +490,8 @@
                 android:layout_height="wrap_content"
                 android:text="@string/show_all_blocked_elements"
                 android:textColor="@color/systemfeedback_warning_text"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="14dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:background="?android:attr/selectableItemBackground"/>
@@ -499,7 +500,7 @@
                 android:id="@+id/reset_shields_divider"
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="?attr/colorSurfaceContainer"/>
+                android:background="#252525"/>
 
             <!-- 9. Reset to defaults button -->
             <TextView
@@ -509,8 +510,8 @@
                 android:layout_height="wrap_content"
                 android:text="@string/reset_shields_defaults"
                 android:textColor="@color/systemfeedback_warning_text"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="14dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:background="?android:attr/selectableItemBackground"/>
@@ -518,7 +519,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="?attr/colorSurfaceContainer"/>
+                android:background="#252525"/>
 
             <!-- 9. Shields global settings -->
             <LinearLayout
@@ -527,8 +528,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="14dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:background="?android:attr/selectableItemBackground">
@@ -539,7 +540,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/brave_shields_global_settings_title"
-                    android:textColor="?attr/colorPrimary"/>
+                    android:textColor="#FFFFFF"/>
 
                 <ImageView
                     android:layout_width="24dp"
@@ -570,7 +571,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/site_broken_text"
-            android:textColor="?attr/colorOutline"
+            android:textColor="#9A9A9A"
             android:gravity="center"/>
 
         <TextView
@@ -579,7 +580,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/shields_warning_line2"
-            android:textColor="?attr/colorOutline"
+            android:textColor="#9A9A9A"
             android:gravity="center"/>
 
     </LinearLayout>

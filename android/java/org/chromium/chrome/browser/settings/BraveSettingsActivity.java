@@ -9,7 +9,9 @@ import static org.chromium.build.NullUtil.assumeNonNull;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -259,15 +261,25 @@ public class BraveSettingsActivity extends SettingsActivity {
 
     private static void styleMinimalBlackSettingsRow(View row) {
         // Preserve each preference's native selectable/ripple background.
+        int minimumHeight = Math.round(64 * row.getResources().getDisplayMetrics().density);
+        row.setMinimumHeight(Math.max(row.getMinimumHeight(), minimumHeight));
         styleMinimalBlackSettingsDescendants(row);
     }
 
     private static void styleMinimalBlackSettingsDescendants(View view) {
         if (view instanceof TextView textView) {
-            textView.setTextColor(
-                    textView.getId() == android.R.id.summary
-                            ? Color.rgb(154, 154, 154)
-                            : Color.WHITE);
+            int viewId = textView.getId();
+            if (viewId == android.R.id.summary) {
+                textView.setTextColor(Color.rgb(154, 154, 154));
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            } else {
+                textView.setTextColor(Color.WHITE);
+                if (viewId == android.R.id.title) {
+                    textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+                    textView.setTypeface(
+                            Typeface.create("sans-serif-medium", Typeface.NORMAL));
+                }
+            }
         } else if (view instanceof ImageView imageView) {
             imageView.setColorFilter(Color.WHITE);
         }
