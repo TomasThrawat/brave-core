@@ -723,6 +723,12 @@ const util = {
         // Release builds can have steps that can be interrupted by timeouts. We
         // don't want to clean the build in this case.
         && !config.isBraveReleaseBuild()
+        // CircleCI Free jobs are limited to one hour. Preserve Android Ninja
+        // output between deliberate build slices instead of cleaning it.
+        && !(
+          config.isAndroid()
+          && process.env.CIRCLECI_PRESERVE_ANDROID_BUILD === '1'
+        )
         && buildGuard.wasInterrupted()
       ) {
         await util.runAsync('gn', ['clean', outputDir], options)
