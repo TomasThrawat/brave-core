@@ -1,5 +1,4 @@
 version: 2.1
-
 jobs:
   build-brave-android-arm64-slice:
     parameters:
@@ -16,340 +15,203 @@ jobs:
       caches: 1d
     environment:
       GIT_CACHE_PATH: /home/circleci/brave-workspace/.circleci-git-cache
-      CIRCLECI_PRESERVE_ANDROID_BUILD: "1"
+      CIRCLECI_PRESERVE_ANDROID_BUILD: '1'
     steps:
-      - checkout:
-          path: src/brave
-
-      - restore_cache:
-          keys:
-            - brave-android-out-v2-{{ .Revision }}-
-
-      - restore_cache:
-          keys:
-            - brave-pnpm-v1-{{ checksum "src/brave/pnpm-lock.yaml" }}
-            - brave-pnpm-v1-
-
-      - restore_cache:
-          keys:
-            - brave-git-cache-v1-{{ .Branch }}-
-
-      - run:
-          name: Prepare Linux host and update Git
-          command: |
-            set -euo pipefail
-            OUT_DIR="src/out/android_Static_arm64"
-            if [ -f "$OUT_DIR/.circleci-build-complete" ]; then
-              echo "APK already completed in an earlier build slice."
-              exit 0
-            fi
-
-            sudo apt-get update
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y               build-essential ca-certificates curl python3 python-is-python3               software-properties-common xz-utils
-
-            sudo add-apt-repository -y ppa:git-core/ppa
-            sudo apt-get update
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git
-            GIT_VERSION="$(git --version | awk '{print $3}')"
-            echo "Git version: $GIT_VERSION"
-            dpkg --compare-versions "$GIT_VERSION" ge "2.46.0"
-
-            if [ ! -f /swapfile ]; then
-              sudo fallocate -l 8G /swapfile
-              sudo chmod 600 /swapfile
-              sudo mkswap /swapfile
-            fi
-            sudo swapon /swapfile || true
-            free -h
-            df -h /
-
-      - run:
-          name: Install Node.js 24 and pnpm
-          command: |
-            set -euo pipefail
-            OUT_DIR="src/out/android_Static_arm64"
-            if [ -f "$OUT_DIR/.circleci-build-complete" ]; then
-              echo "Skipping toolchain setup; APK is already complete."
-              exit 0
-            fi
-
-            NODE_VERSION=24.16.0
-            NODE_DIST="node-v${NODE_VERSION}-linux-x64"
-            mkdir -p "$HOME/.local"
-            curl --retry 5 --retry-all-errors -fsSL               "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_DIST}.tar.xz"               -o /tmp/node.tar.xz
-            tar -xJf /tmp/node.tar.xz -C "$HOME/.local"
-            echo "export PATH=\"$HOME/.local/${NODE_DIST}/bin:\$PATH\"" >> "$BASH_ENV"
-            source "$BASH_ENV"
-            npm install --global pnpm@11.11.0
-            test "$(node --version)" = "v${NODE_VERSION}"
-            pnpm --version
-
-      - run:
-          name: Install locked Brave JavaScript dependencies
-          command: |
-            set -euo pipefail
-            OUT_DIR="src/out/android_Static_arm64"
-            if [ -f "$OUT_DIR/.circleci-build-complete" ]; then
-              echo "Skipping pnpm install; APK is already complete."
-              exit 0
-            fi
-
-            source "$BASH_ENV"
-            cd src/brave
-            pnpm install --offline --frozen-lockfile --yes
-
-      - run:
-          name: Initialize Brave and Chromium Android sources (shallow history)
-          command: |
-            set -euo pipefail
-            OUT_DIR="src/out/android_Static_arm64"
-            if [ -f "$OUT_DIR/.circleci-build-complete" ]; then
-              echo "Skipping source sync; APK is already complete."
-              exit 0
-            fi
-
-            source "$BASH_ENV"
-            cd src/brave
-            node ./build/commands/scripts/sync.ts               --init --target_os=android --target_arch=arm64 --no-history
-          no_output_timeout: 30m
-
-      - run:
-          name: Install Android build dependencies
-          command: |
-            set -euo pipefail
-            OUT_DIR="src/out/android_Static_arm64"
-            if [ -f "$OUT_DIR/.circleci-build-complete" ]; then
-              echo "Skipping Android dependencies; APK is already complete."
-              exit 0
-            fi
-
-            sudo DEBIAN_FRONTEND=noninteractive               ./src/build/install-build-deps.sh --android
-          no_output_timeout: 30m
-
-      - run:
-          name: Build Brave Android ARM64 APK (slice << parameters.segment >>)
-          command: |
-            set -euo pipefail
-            source "$BASH_ENV"
-            OUT_DIR="src/out/android_Static_arm64"
-            ARTIFACT_DIR="src/.brave-artifacts"
-            mkdir -p "$OUT_DIR" "$ARTIFACT_DIR"
-            rm -f "$ARTIFACT_DIR/BUILD_INCOMPLETE.txt"               "$ARTIFACT_DIR/BUILD_FAILED.txt"
-
-            if [ -f "$OUT_DIR/.circleci-build-complete" ]; then
-              echo "APK already complete; this serial slice is a no-op."
-              exit 0
-            fi
-
-            set +e
-            timeout --signal=INT --kill-after=45s 27m               pnpm --dir src/brave run build                 --target_os=android                 --target_arch=arm64                 --target_android_output_format=apk
-            BUILD_STATUS=$?
-            set -e
-
-            if [ "$BUILD_STATUS" -eq 0 ]; then
-              mapfile -d '' packages < <(
-                find src/out -type f ( -iname '*.apk' -o -iname '*.aab' ) -print0
-              )
-              if [ "${#packages[@]}" -eq 0 ]; then
-                printf 'Build command succeeded, but no APK/AAB was found.\n'                   > "$ARTIFACT_DIR/BUILD_FAILED.txt"
-                printf '2\n' > "$OUT_DIR/.circleci-build-failed"
-              else
-                cp --parents "${packages[@]}" "$ARTIFACT_DIR/"
-                sha256sum "${packages[@]}" > "$ARTIFACT_DIR/SHA256SUMS.txt"
-
-                # Keep only the completion marker and APK artifacts in later
-                # slices; compiled objects are no longer needed after success.
-                rm -rf "$OUT_DIR"
-                mkdir -p "$OUT_DIR"
-                touch "$OUT_DIR/.circleci-build-complete"
-                echo "Brave Android ARM64 APK build completed."
-              fi
-            elif [ "$BUILD_STATUS" -eq 124 ]; then
-              printf 'Slice << parameters.segment >> ended at its 27-minute checkpoint; Ninja outputs are cached for the next slice.\n'                 > "$ARTIFACT_DIR/BUILD_INCOMPLETE.txt"
-              echo "Ninja state preserved; the next serial job will resume."
-            else
-              printf '%s\n' "$BUILD_STATUS" > "$OUT_DIR/.circleci-build-failed"
-              printf 'APK build exited with status %s in slice << parameters.segment >>.\n'                 "$BUILD_STATUS" > "$ARTIFACT_DIR/BUILD_FAILED.txt"
-              echo "Build failed with status $BUILD_STATUS; preserving outputs for diagnosis."
-            fi
-          no_output_timeout: 35m
-
-      - save_cache:
-          key: brave-android-out-v2-{{ .Revision }}-{{ .BuildNum }}
-          paths:
-            - src/out/android_Static_arm64
-            - src/.brave-artifacts
-
-      - store_artifacts:
-          path: src/.brave-artifacts
-          destination: brave-android-arm64-segment-<< parameters.segment >>
-
-      - run:
-          name: Verify build segment << parameters.segment >>
-          command: |
-            set -euo pipefail
-            OUT_DIR="src/out/android_Static_arm64"
-            ARTIFACT_DIR="src/.brave-artifacts"
-
-            if [ -f "$OUT_DIR/.circleci-build-failed" ]; then
-              cat "$ARTIFACT_DIR/BUILD_FAILED.txt"
-              exit "$(cat "$OUT_DIR/.circleci-build-failed")"
-            fi
-
-            if [ "<< parameters.final_segment >>" = "true" ]               && [ ! -f "$OUT_DIR/.circleci-build-complete" ]; then
-              echo "The configured 16 free build slices ended before APK completion."
-              echo "The latest Ninja output cache and progress remain saved."
-              exit 1
-            fi
-
-            if [ -f "$OUT_DIR/.circleci-build-complete" ]; then
-              echo "Verified: Brave Android ARM64 APK is complete."
-            else
-              echo "Verified: partial Ninja outputs were saved for the next slice."
-            fi
-
+    - run:
+        name: Prepare checkout directory
+        command: mkdir -p src/brave
+    - checkout:
+        path: src/brave
+    - restore_cache:
+        keys:
+        - brave-android-out-v2-{{ .Revision }}-
+    - restore_cache:
+        keys:
+        - brave-pnpm-v1-{{ checksum "src/brave/pnpm-lock.yaml" }}
+        - brave-pnpm-v1-
+    - restore_cache:
+        keys:
+        - brave-git-cache-v1-{{ .Branch }}-
+    - run:
+        name: Prepare Linux host and update Git
+        command: "set -euo pipefail\nOUT_DIR=\"src/out/android_Static_arm64\"\nif [ -f \"$OUT_DIR/.circleci-build-complete\"\
+          \ ]; then\n  echo \"APK already completed in an earlier build slice.\"\n  exit 0\nfi\n\nsudo apt-get update\n\
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y               build-essential ca-certificates curl\
+          \ python3 python-is-python3               software-properties-common xz-utils\n\nsudo add-apt-repository\
+          \ -y ppa:git-core/ppa\nsudo apt-get update\nsudo DEBIAN_FRONTEND=noninteractive apt-get install -y git\n\
+          GIT_VERSION=\"$(git --version | awk '{print $3}')\"\necho \"Git version: $GIT_VERSION\"\ndpkg --compare-versions\
+          \ \"$GIT_VERSION\" ge \"2.46.0\"\n\nif [ ! -f /swapfile ]; then\n  sudo fallocate -l 8G /swapfile\n  sudo\
+          \ chmod 600 /swapfile\n  sudo mkswap /swapfile\nfi\nsudo swapon /swapfile || true\nfree -h\ndf -h /\n"
+    - run:
+        name: Install Node.js 24 and pnpm
+        command: "set -euo pipefail\nOUT_DIR=\"src/out/android_Static_arm64\"\nif [ -f \"$OUT_DIR/.circleci-build-complete\"\
+          \ ]; then\n  echo \"Skipping toolchain setup; APK is already complete.\"\n  exit 0\nfi\n\nNODE_VERSION=24.16.0\n\
+          NODE_DIST=\"node-v${NODE_VERSION}-linux-x64\"\nmkdir -p \"$HOME/.local\"\ncurl --retry 5 --retry-all-errors\
+          \ -fsSL               \"https://nodejs.org/dist/v${NODE_VERSION}/${NODE_DIST}.tar.xz\"               -o\
+          \ /tmp/node.tar.xz\ntar -xJf /tmp/node.tar.xz -C \"$HOME/.local\"\necho \"export PATH=\\\"$HOME/.local/${NODE_DIST}/bin:\\\
+          $PATH\\\"\" >> \"$BASH_ENV\"\nsource \"$BASH_ENV\"\nnpm install --global pnpm@11.11.0\ntest \"$(node --version)\"\
+          \ = \"v${NODE_VERSION}\"\npnpm --version\n"
+    - run:
+        name: Install locked Brave JavaScript dependencies
+        command: "set -euo pipefail\nOUT_DIR=\"src/out/android_Static_arm64\"\nif [ -f \"$OUT_DIR/.circleci-build-complete\"\
+          \ ]; then\n  echo \"Skipping pnpm install; APK is already complete.\"\n  exit 0\nfi\n\nsource \"$BASH_ENV\"\
+          \ncd src/brave\npnpm install --offline --frozen-lockfile --yes\n"
+    - run:
+        name: Initialize Brave and Chromium Android sources (shallow history)
+        command: "set -euo pipefail\nOUT_DIR=\"src/out/android_Static_arm64\"\nif [ -f \"$OUT_DIR/.circleci-build-complete\"\
+          \ ]; then\n  echo \"Skipping source sync; APK is already complete.\"\n  exit 0\nfi\n\nsource \"$BASH_ENV\"\
+          \ncd src/brave\nnode ./build/commands/scripts/sync.ts               --init --target_os=android --target_arch=arm64\
+          \ --no-history\n"
+        no_output_timeout: 30m
+    - run:
+        name: Install Android build dependencies
+        command: "set -euo pipefail\nOUT_DIR=\"src/out/android_Static_arm64\"\nif [ -f \"$OUT_DIR/.circleci-build-complete\"\
+          \ ]; then\n  echo \"Skipping Android dependencies; APK is already complete.\"\n  exit 0\nfi\n\nsudo DEBIAN_FRONTEND=noninteractive\
+          \               ./src/build/install-build-deps.sh --android\n"
+        no_output_timeout: 30m
+    - run:
+        name: Build Brave Android ARM64 APK (slice << parameters.segment >>)
+        command: "set -euo pipefail\nsource \"$BASH_ENV\"\nOUT_DIR=\"src/out/android_Static_arm64\"\nARTIFACT_DIR=\"\
+          src/.brave-artifacts\"\nmkdir -p \"$OUT_DIR\" \"$ARTIFACT_DIR\"\nrm -f \"$ARTIFACT_DIR/BUILD_INCOMPLETE.txt\"\
+          \               \"$ARTIFACT_DIR/BUILD_FAILED.txt\"\n\nif [ -f \"$OUT_DIR/.circleci-build-complete\" ];\
+          \ then\n  echo \"APK already complete; this serial slice is a no-op.\"\n  exit 0\nfi\n\nset +e\ntimeout\
+          \ --signal=INT --kill-after=45s 27m               pnpm --dir src/brave run build                 --target_os=android\
+          \                 --target_arch=arm64                 --target_android_output_format=apk\nBUILD_STATUS=$?\n\
+          set -e\n\nif [ \"$BUILD_STATUS\" -eq 0 ]; then\n  mapfile -d '' packages < <(\n    find src/out -type\
+          \ f ( -iname '*.apk' -o -iname '*.aab' ) -print0\n  )\n  if [ \"${#packages[@]}\" -eq 0 ]; then\n    printf\
+          \ 'Build command succeeded, but no APK/AAB was found.\\n'                   > \"$ARTIFACT_DIR/BUILD_FAILED.txt\"\
+          \n    printf '2\\n' > \"$OUT_DIR/.circleci-build-failed\"\n  else\n    cp --parents \"${packages[@]}\"\
+          \ \"$ARTIFACT_DIR/\"\n    sha256sum \"${packages[@]}\" > \"$ARTIFACT_DIR/SHA256SUMS.txt\"\n\n    # Keep\
+          \ only the completion marker and APK artifacts in later\n    # slices; compiled objects are no longer\
+          \ needed after success.\n    rm -rf \"$OUT_DIR\"\n    mkdir -p \"$OUT_DIR\"\n    touch \"$OUT_DIR/.circleci-build-complete\"\
+          \n    echo \"Brave Android ARM64 APK build completed.\"\n  fi\nelif [ \"$BUILD_STATUS\" -eq 124 ]; then\n\
+          \  printf 'Slice << parameters.segment >> ended at its 27-minute checkpoint; Ninja outputs are cached\
+          \ for the next slice.\\n'                 > \"$ARTIFACT_DIR/BUILD_INCOMPLETE.txt\"\n  echo \"Ninja state\
+          \ preserved; the next serial job will resume.\"\nelse\n  printf '%s\\n' \"$BUILD_STATUS\" > \"$OUT_DIR/.circleci-build-failed\"\
+          \n  printf 'APK build exited with status %s in slice << parameters.segment >>.\\n'                 \"\
+          $BUILD_STATUS\" > \"$ARTIFACT_DIR/BUILD_FAILED.txt\"\n  echo \"Build failed with status $BUILD_STATUS;\
+          \ preserving outputs for diagnosis.\"\nfi\n"
+        no_output_timeout: 35m
+    - save_cache:
+        key: brave-android-out-v2-{{ .Revision }}-{{ .BuildNum }}
+        paths:
+        - src/out/android_Static_arm64
+        - src/.brave-artifacts
+    - store_artifacts:
+        path: src/.brave-artifacts
+        destination: brave-android-arm64-segment-<< parameters.segment >>
+    - run:
+        name: Verify build segment << parameters.segment >>
+        command: "set -euo pipefail\nOUT_DIR=\"src/out/android_Static_arm64\"\nARTIFACT_DIR=\"src/.brave-artifacts\"\
+          \n\nif [ -f \"$OUT_DIR/.circleci-build-failed\" ]; then\n  cat \"$ARTIFACT_DIR/BUILD_FAILED.txt\"\n  exit\
+          \ \"$(cat \"$OUT_DIR/.circleci-build-failed\")\"\nfi\n\nif [ \"<< parameters.final_segment >>\" = \"true\"\
+          \ ]               && [ ! -f \"$OUT_DIR/.circleci-build-complete\" ]; then\n  echo \"The configured 16\
+          \ free build slices ended before APK completion.\"\n  echo \"The latest Ninja output cache and progress\
+          \ remain saved.\"\n  exit 1\nfi\n\nif [ -f \"$OUT_DIR/.circleci-build-complete\" ]; then\n  echo \"Verified:\
+          \ Brave Android ARM64 APK is complete.\"\nelse\n  echo \"Verified: partial Ninja outputs were saved for\
+          \ the next slice.\"\nfi\n"
 workflows:
   brave-android-arm64:
     jobs:
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-01
-          segment: "01"
-          final_segment: false
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-02
-          segment: "02"
-          final_segment: false
-          requires:
-            - brave-android-arm64-01
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-03
-          segment: "03"
-          final_segment: false
-          requires:
-            - brave-android-arm64-02
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-04
-          segment: "04"
-          final_segment: false
-          requires:
-            - brave-android-arm64-03
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-05
-          segment: "05"
-          final_segment: false
-          requires:
-            - brave-android-arm64-04
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-06
-          segment: "06"
-          final_segment: false
-          requires:
-            - brave-android-arm64-05
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-07
-          segment: "07"
-          final_segment: false
-          requires:
-            - brave-android-arm64-06
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-08
-          segment: "08"
-          final_segment: false
-          requires:
-            - brave-android-arm64-07
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-09
-          segment: "09"
-          final_segment: false
-          requires:
-            - brave-android-arm64-08
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-10
-          segment: "10"
-          final_segment: false
-          requires:
-            - brave-android-arm64-09
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-11
-          segment: "11"
-          final_segment: false
-          requires:
-            - brave-android-arm64-10
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-12
-          segment: "12"
-          final_segment: false
-          requires:
-            - brave-android-arm64-11
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-13
-          segment: "13"
-          final_segment: false
-          requires:
-            - brave-android-arm64-12
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-14
-          segment: "14"
-          final_segment: false
-          requires:
-            - brave-android-arm64-13
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-15
-          segment: "15"
-          final_segment: false
-          requires:
-            - brave-android-arm64-14
-          filters:
-            branches:
-              only: master
-      - build-brave-android-arm64-slice:
-          name: brave-android-arm64-16
-          segment: "16"
-          final_segment: true
-          requires:
-            - brave-android-arm64-15
-          filters:
-            branches:
-              only: master
+    - brave-android-arm64-build:
+        serial-group: << pipeline.project.slug >>/brave-android-arm64
+        filters:
+          branches:
+            only: master
+job-groups:
+  brave-android-arm64-build:
+    jobs:
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-01
+        segment: '01'
+        final_segment: false
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-02
+        segment: '02'
+        final_segment: false
+        requires:
+        - brave-android-arm64-01
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-03
+        segment: '03'
+        final_segment: false
+        requires:
+        - brave-android-arm64-02
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-04
+        segment: '04'
+        final_segment: false
+        requires:
+        - brave-android-arm64-03
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-05
+        segment: '05'
+        final_segment: false
+        requires:
+        - brave-android-arm64-04
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-06
+        segment: '06'
+        final_segment: false
+        requires:
+        - brave-android-arm64-05
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-07
+        segment: '07'
+        final_segment: false
+        requires:
+        - brave-android-arm64-06
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-08
+        segment: 08
+        final_segment: false
+        requires:
+        - brave-android-arm64-07
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-09
+        segment: 09
+        final_segment: false
+        requires:
+        - brave-android-arm64-08
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-10
+        segment: '10'
+        final_segment: false
+        requires:
+        - brave-android-arm64-09
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-11
+        segment: '11'
+        final_segment: false
+        requires:
+        - brave-android-arm64-10
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-12
+        segment: '12'
+        final_segment: false
+        requires:
+        - brave-android-arm64-11
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-13
+        segment: '13'
+        final_segment: false
+        requires:
+        - brave-android-arm64-12
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-14
+        segment: '14'
+        final_segment: false
+        requires:
+        - brave-android-arm64-13
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-15
+        segment: '15'
+        final_segment: false
+        requires:
+        - brave-android-arm64-14
+    - build-brave-android-arm64-slice:
+        name: brave-android-arm64-16
+        segment: '16'
+        final_segment: true
+        requires:
+        - brave-android-arm64-15
