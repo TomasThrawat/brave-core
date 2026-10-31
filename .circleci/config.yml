@@ -66,8 +66,8 @@ jobs:
         key: brave-git-cache-v2-{{ .Branch }}-{{ .BuildNum }}
         paths:
         - .circleci-git-cache
-    - persist_to_workspace:
-        root: /home/circleci/brave-workspace
+    - save_cache:
+        key: brave-source-v1-{{ .Revision }}
         paths:
         - src
         - .gclient
@@ -87,8 +87,9 @@ jobs:
     environment:
       CIRCLECI_PRESERVE_ANDROID_BUILD: '1'
     steps:
-    - attach_workspace:
-        at: /home/circleci/brave-workspace
+    - restore_cache:
+        keys:
+        - brave-source-v1-{{ .Revision }}
     - restore_cache:
         keys:
         - brave-android-out-v3-{{ .Revision }}-
